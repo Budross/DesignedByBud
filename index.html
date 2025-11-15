@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="DesignedByBud - Explore our unique 3D-designed products available on Etsy. High-quality, custom-designed items for your home and life.">
+    <meta name="keywords" content="DesignedByBud, Etsy, 3D design, custom products, home accessories">
+    <title>DesignedByBud - Unique 3D Designed Products</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="landing-page.css">
+    <link rel="stylesheet" href="product-card.css">
+</head>
+<body>
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-banner-container">
+            <img src="graphics/EtsyBanner2.png" alt="DesignedByBud - Designs Built Better" class="hero-banner">
+        </div>
+        <div class="hero-content">
+            <p class="hero-description">
+                Discover unique, high-quality hand crafted products made with precision and care.
+                Each piece is thoughtfully created to bring functionality and style to your everyday life.
+                Explore our collection and find the perfect addition to your home or gift for a loved one.
+            </p>
+            <div class="hero-cta">
+                <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="cta-button primary">
+                    <span class="cta-text">Visit Our Etsy Store</span>
+                    <svg class="cta-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4.16699 10H15.8337" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M10 4.16699L15.8333 10.0003L10 15.8337" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+                <a href="#products" class="cta-button secondary">Explore Products</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Products Section -->
+    <section class="products-section" id="products">
+        <div class="section-header">
+            <h2 class="section-title">Our Featured Products</h2>
+            <p class="section-subtitle">Explore our collection in interactive 3D - drag to rotate any product</p>
+        </div>
+
+        <!-- Product Grid Container -->
+        <div class="product-grid">
+
+            <!-- Product Card 1: MagCase -->
+            <div class="product-card">
+                <div class="viewer-3d" id="viewer-magcase">
+                    <div class="loading-indicator" id="loading-magcase">Loading 3D Model...</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">MagCase</h3><br>
+                    <p class="product-description">Sleek magnetic card case designed for secure storage and easy access to your valuable trading cards.</p>
+                    <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="product-link">
+                        View on Etsy
+                    </a>
+                </div>
+                <div class="card-controls">
+                    <label>
+                        <input type="checkbox" class="auto-rotate" data-viewer="magcase">
+                        Auto-rotate
+                    </label>
+                    <span class="spacer"></span>
+                    <button class="reset-btn" data-viewer="magcase">Reset View</button>
+                </div>
+            </div>
+
+            <!-- Product Card 2: Weighted-Base MagCase Organizer -->
+            <div class="product-card">
+                <div class="viewer-3d" id="viewer-weighted-magcase">
+                    <div class="loading-indicator" id="loading-weighted-magcase">Loading 3D Model...</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Weighted-Base MagCase Organizer</h3>
+                    <p class="product-description">Premium organizer with weighted base for stability. Perfect for displaying and organizing your MagCase collection.</p>
+                    <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="product-link">
+                        View on Etsy
+                    </a>
+                </div>
+                <div class="card-controls">
+                    <label>
+                        <input type="checkbox" class="auto-rotate" data-viewer="weighted-magcase">
+                        Auto-rotate
+                    </label>
+                    <span class="spacer"></span>
+                    <button class="reset-btn" data-viewer="weighted-magcase">Reset View</button>
+                </div>
+            </div>
+
+            <!-- Product Card 3: Weighted-Base 50-Card Organizer -->
+            <div class="product-card">
+                <div class="viewer-3d" id="viewer-weighted-50card">
+                    <div class="loading-indicator" id="loading-weighted-50card">Loading 3D Model...</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Weighted-Base 50-Card Organizer</h3>
+                    <p class="product-description">Heavy-duty organizer with capacity for up to 50 top-loader cards.</p>
+                    <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="product-link">
+                        View on Etsy
+                    </a>
+                </div>
+                <div class="card-controls">
+                    <label>
+                        <input type="checkbox" class="auto-rotate" data-viewer="weighted-50card">
+                        Auto-rotate
+                    </label>
+                    <span class="spacer"></span>
+                    <button class="reset-btn" data-viewer="weighted-50card">Reset View</button>
+                </div>
+            </div>
+
+            <!-- Product Card 4: MagCase Modular Stand -->
+            <div class="product-card">
+                <div class="viewer-3d" id="viewer-modular-stand">
+                    <div class="loading-indicator" id="loading-modular-stand">Loading 3D Model...</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">MagCase Modular Stand</h3><br>
+                    <p class="product-description">Modular stand system for MagCase card display. Snap multiple stands together side-by-side with built-in magnets!</p>
+                    <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="product-link">
+                        View on Etsy
+                    </a>
+                </div>
+                <div class="card-controls">
+                    <label>
+                        <input type="checkbox" class="auto-rotate" data-viewer="modular-stand">
+                        Auto-rotate
+                    </label>
+                    <span class="spacer"></span>
+                    <button class="reset-btn" data-viewer="modular-stand">Reset View</button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about-section">
+        <div class="about-content">
+            <h2 class="about-title">Why Choose DesignedByBud?</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 5L25 15L35 16.5L27.5 23.5L29.5 35L20 29.5L10.5 35L12.5 23.5L5 16.5L15 15L20 5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3>Handcrafted Designs</h3>
+                    <p>Every design is my personal signature, my passion projects turned tangible. </p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="5" y="10" width="30" height="25" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M15 10V7C15 5.89543 15.8954 5 17 5H23C24.1046 5 25 5.89543 25 7V10" stroke="currentColor" stroke-width="2"/>
+                            <path d="M5 15H35" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3>Ready to Ship</h3>
+                    <p>Fast processing and shipping to get your products to you quickly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-brand-header">
+                    <img src="graphics/DBB_LOGO.png" alt="DBB Logo" class="footer-logo-image">
+                    <h3 class="footer-logo">DesignedByBud</h3>
+                </div>
+                <p class="footer-tagline">Bringing ideas to life through innovative design</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-section">
+                    <h4>Shop</h4>
+                    <ul>
+                        <li><a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer">Etsy Store</a></li>
+                        <li><a href="#products">All Products</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul>
+                        <li><a href="https://www.tiktok.com/@designedbybud" target="_blank" rel="noopener noreferrer">Tiktok</a></li>
+                        <li><a href="https://www.instagram.com/designedbybud/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 DesignedByBud. All rights reserved.</p>
+            <p class="footer-note">Products available exclusively on <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer">Etsy</a></p>
+        </div>
+    </footer>
+
+    <!-- Three.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+
+    <!-- OBJ Viewer Framework -->
+    <script src="obj-viewer.js"></script>
+
+    <script>
+        // Product configurations
+        const products = [
+            {
+                id: 'magcase',
+                viewerId: 'viewer-magcase',
+                modelPath: 'products/MagCase.obj',
+                color: 0x4a90e2,
+                initialRotation: { x: Math.PI/6, y: -Math.PI/4, z: 0 },
+                autoRotateAxis: 'y'
+            },
+            {
+                id: 'weighted-magcase',
+                viewerId: 'viewer-weighted-magcase',
+                modelPath: 'products/Weighted-Base MagCase Organizer.obj',
+                color: 0x2ecc71,
+                initialRotation: { x: -Math.PI/4, y: 0, z: -Math.PI/4 },
+                autoRotateAxis: 'y'
+            },
+            {
+                id: 'weighted-50card',
+                viewerId: 'viewer-weighted-50card',
+                modelPath: 'products/Weighted-Base 50-Card Organizer.obj',
+                color: 0xe74c3c,
+                initialRotation: { x: -Math.PI/4, y: 0, z: -Math.PI/4 },
+                autoRotateAxis: 'y'
+            },
+            {
+                id: 'modular-stand',
+                viewerId: 'viewer-modular-stand',
+                modelPath: 'products/MagCase Modular Stand.obj',
+                color: 0x9b59b6,
+                initialRotation: { x: -Math.PI/4, y: 0, z: -Math.PI/4 },
+                autoRotateAxis: 'y'
+            }
+        ];
+
+        // Store viewer instances
+        const viewers = {};
+
+        // Initialize all product viewers
+        products.forEach(product => {
+            viewers[product.id] = new OBJViewer(product.viewerId, {
+                backgroundColor: 0xf8f9fa,
+                modelColor: product.color,
+                enableRotation: true,
+                autoRotate: false,
+                autoRotateSpeed: 0.3,
+                autoRotateAxis: product.autoRotateAxis,
+                lightIntensity: 1,
+                initialRotation: product.initialRotation
+            });
+
+            const loadingIndicator = document.getElementById(`loading-${product.id}`);
+
+            viewers[product.id].loadOBJ(product.modelPath)
+                .then(() => {
+                    loadingIndicator.style.display = 'none';
+                    console.log(`${product.id} loaded successfully`);
+                })
+                .catch((error) => {
+                    loadingIndicator.textContent = 'Failed to load model';
+                    loadingIndicator.style.color = '#dc3545';
+                    console.error(`Error loading ${product.id}:`, error);
+                });
+        });
+
+        // Setup auto-rotate toggles
+        document.querySelectorAll('.auto-rotate').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const viewerId = e.target.dataset.viewer;
+                viewers[viewerId].config.autoRotate = e.target.checked;
+            });
+        });
+
+        // Setup reset buttons
+        document.querySelectorAll('.reset-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const viewerId = e.target.dataset.viewer;
+                viewers[viewerId].resetRotation();
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
