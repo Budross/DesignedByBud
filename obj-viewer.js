@@ -135,11 +135,16 @@ class OBJViewer {
           x: e.touches[0].clientX,
           y: e.touches[0].clientY
         };
+        // Prevent page scrolling when touching the 3D viewer on mobile
+        e.preventDefault();
       }
-    });
+    }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
       if (this.controls.isDragging && this.model && e.touches.length === 1) {
+        // Prevent page scrolling during 3D model interaction on mobile
+        e.preventDefault();
+
         const deltaX = e.touches[0].clientX - this.controls.previousMousePosition.x;
         const deltaY = e.touches[0].clientY - this.controls.previousMousePosition.y;
 
@@ -151,7 +156,7 @@ class OBJViewer {
           y: e.touches[0].clientY
         };
       }
-    });
+    }, { passive: false });
 
     canvas.addEventListener('touchend', () => {
       this.controls.isDragging = false;

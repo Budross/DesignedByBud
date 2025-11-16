@@ -93,3 +93,36 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         }
     });
 });
+
+// Mobile-specific: Auto-transform product cards when visible in viewport
+// Detect if device is mobile/touch-enabled
+const isMobileDevice = () => {
+    return (
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        window.matchMedia('(hover: none)').matches
+    );
+};
+
+// Only apply intersection observer on mobile devices
+if (isMobileDevice()) {
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.2 // Trigger when 20% of card is visible
+    };
+
+    const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Add scrolled class to trigger transformation
+                entry.target.classList.add('mobile-visible');
+            }
+        });
+    }, observerOptions);
+
+    // Observe all product cards
+    document.querySelectorAll('.product-card').forEach(card => {
+        cardObserver.observe(card);
+    });
+}
