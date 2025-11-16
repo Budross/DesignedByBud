@@ -125,4 +125,16 @@ if (isMobileDevice()) {
     document.querySelectorAll('.product-card').forEach(card => {
         cardObserver.observe(card);
     });
+
+    // Track touch interactions on 3D viewers to keep cards in focus
+    document.querySelectorAll('.viewer-3d').forEach(viewer => {
+        viewer.addEventListener('touchstart', (e) => {
+            // Find the parent product card
+            const card = viewer.closest('.product-card');
+            if (card) {
+                // Mark this card as interacted with
+                card.classList.add('interacted');
+            }
+        });
+    });
 }
