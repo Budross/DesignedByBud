@@ -1,0 +1,258 @@
+/**
+ * Interactive Card Stack Animation CSS
+ * 4 cards per row with 20-degree perspective that overlap and spread on hover/scroll
+ * FIXED: Responsive equal spacing using percentage-based translateX instead of fixed margins
+ */
+
+/* Grid container for product cards - 4 per row */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 20px;
+    perspective: 1000px;
+    perspective-origin: center center;
+    position: relative;
+    justify-items: center;
+}
+
+/* Individual product card */
+.product-card {
+    background: #fef7f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: 1px solid #f1f3f5;
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    
+    /* Base 3D transform - cards rotated 20 degrees by default */
+    transform: rotateY(20deg) translateY(0) scale(0.95);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center center;
+    
+    z-index: var(--card-index, 1);
+}
+
+/* Position cards using translateX based on their position in the row */
+/* Percentages scale with viewport, maintaining equal spacing at all widths */
+.product-card:nth-child(4n+1) { 
+    --card-index: 1;
+    transform: rotateY(20deg) translateX(25%) translateY(0) scale(0.95);
+}
+.product-card:nth-child(4n+2) { 
+    --card-index: 2;
+    transform: rotateY(20deg) translateX(15%) translateY(0) scale(0.95);
+}
+.product-card:nth-child(4n+3) { 
+    --card-index: 3;
+    transform: rotateY(18deg) translateX(-10%) translateY(0) scale(0.95);
+}
+.product-card:nth-child(4n+4) { 
+    --card-index: 4;
+    transform: rotateY(15deg) translateX(-45%) translateY(0) scale(0.95);
+}
+
+/* Flatten and spread cards on grid hover */
+.product-grid:hover .product-card,
+.product-grid.scrolled .product-card {
+    transform: rotateY(0deg) translateX(0) translateY(-10px) scale(1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+/* Individual card hover - elevate even more */
+.product-card:hover {
+    transform: rotateY(0deg) translateX(0) translateY(-20px) scale(1.05) !important;
+    z-index: 100 !important;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 3D viewer container within card */
+.product-card .viewer-3d {
+    width: 100%;
+    height: 280px;
+    position: relative;
+    background: linear-gradient(135deg, #f5f0e8 0%, #e8dfd5 100%);
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    color: rgba(0, 0, 0, 0.1);
+    font-weight: bold;
+}
+
+/* Product information section */
+.product-info {
+    padding: 20px;
+}
+
+.product-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #212529;
+    margin: 0 0 10px 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.product-description {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0 0 14px 0;
+    line-height: 1.6;
+    min-height: 60px;
+}
+
+.product-price {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2563eb;
+    margin: 0 0 12px 0;
+}
+
+/* Card controls section */
+.card-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f5f0e8;
+    border-top: 1px solid #e9ecef;
+}
+
+.card-controls label {
+    font-size: 13px;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-controls input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.card-controls button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+}
+
+.card-controls button:hover {
+    background: #1e40af;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.card-controls button:active {
+    transform: translateY(0);
+}
+
+/* Spacer to push reset button to the right */
+.card-controls .spacer {
+    flex: 1;
+}
+
+/* Loading indicator */
+.loading-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #495057;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .product-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    /* Adjust positioning for 3 columns */
+    .product-card:nth-child(3n+1) {
+        --card-index: 1;
+        transform: rotateY(20deg) translateX(10%) translateY(0) scale(0.95);
+    }
+    
+    .product-card:nth-child(3n+2) {
+        --card-index: 2;
+        transform: rotateY(20deg) translateX(0%) translateY(0) scale(0.95);
+    }
+    
+    .product-card:nth-child(3n+3) {
+        --card-index: 3;
+        transform: rotateY(20deg) translateX(-10%) translateY(0) scale(0.95);
+    }
+}
+
+@media (max-width: 1024px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* Adjust positioning for 2 columns */
+    .product-card:nth-child(2n+1) {
+        --card-index: 1;
+        transform: rotateY(20deg) translateX(8%) translateY(0) scale(0.95);
+    }
+    
+    .product-card:nth-child(2n+2) {
+        --card-index: 2;
+        transform: rotateY(20deg) translateX(-8%) translateY(0) scale(0.95);
+    }
+}
+
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 16px;
+    }
+    
+    .product-card {
+        transform: rotateY(0deg) translateX(0) translateY(0) scale(1);
+    }
+    
+    .product-card .viewer-3d {
+        height: 250px;
+    }
+    
+    .card-controls {
+        flex-wrap: wrap;
+    }
+}
+
+/* Single column layout option */
+.product-grid.single-column {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+}
+
+/* Two column layout option */
+.product-grid.two-columns {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 1000px;
+}
+
+/* Three column layout option */
+.product-grid.three-columns {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: 1400px;
+}
