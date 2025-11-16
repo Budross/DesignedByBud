@@ -570,6 +570,8 @@ body {
 
     .footer-logo-image {
         height: 40px;
+        object-fit: cover;
+        border-radius: 50%;
     }
 
     .footer-logo {

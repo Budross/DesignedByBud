@@ -1,6 +1,14 @@
 /**
  * OBJ Viewer Framework
- * A simple framework for displaying .obj 3D models with interactive rotation
+ * A simple framework for displaying .obj 3D models with interactive rotation using Three.js
+ *
+ * @example
+ * const viewer = new OBJViewer('viewer-container', {
+ *   backgroundColor: 0xf8f9fa,
+ *   modelColor: 0x4a90e2,
+ *   enableRotation: true
+ * });
+ * viewer.loadOBJ('path/to/model.obj');
  */
 
 class OBJViewer {
@@ -38,6 +46,9 @@ class OBJViewer {
     this.init();
   }
 
+  /**
+   * Initialize Three.js scene, camera, renderer, and controls
+   */
   init() {
     // Create scene
     this.scene = new THREE.Scene();
@@ -149,6 +160,13 @@ class OBJViewer {
     canvas.style.cursor = 'grab';
   }
 
+  /**
+   * Load an OBJ 3D model file
+   * @param {string} objPath - Path to the .obj file
+   * @param {string|null} mtlPath - Optional path to .mtl material file
+   * @param {Function|null} onProgress - Optional progress callback
+   * @returns {Promise} Resolves when model is loaded
+   */
   loadOBJ(objPath, mtlPath = null, onProgress = null) {
     return new Promise((resolve, reject) => {
       const loader = new THREE.OBJLoader();
@@ -276,6 +294,9 @@ class OBJViewer {
     this.scene.background = new THREE.Color(color);
   }
 
+  /**
+   * Reset the model rotation to initial state
+   */
   resetRotation() {
     if (this.model) {
       // Reset only the outer group's rotation (user/auto rotations)
