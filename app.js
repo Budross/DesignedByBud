@@ -94,6 +94,43 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
+// "Why MagCase?" expandable description toggle
+const whyMagcaseToggle = document.querySelector('.why-magcase-toggle');
+const whyMagcasePanel = document.querySelector('.why-magcase-panel');
+const magcaseDescription = document.querySelector('.magcase-description');
+
+if (whyMagcaseToggle && whyMagcasePanel) {
+    // Toggle button click handler
+    whyMagcaseToggle.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to document
+        const isActive = whyMagcasePanel.classList.contains('active');
+
+        if (isActive) {
+            // Close panel
+            whyMagcasePanel.classList.remove('active');
+            whyMagcaseToggle.classList.remove('active');
+        } else {
+            // Open panel
+            whyMagcasePanel.classList.add('active');
+            whyMagcaseToggle.classList.add('active');
+        }
+    });
+
+    // Click outside to close panel
+    document.addEventListener('click', (e) => {
+        // Check if click is outside the magcase-description container
+        if (!magcaseDescription.contains(e.target) && whyMagcasePanel.classList.contains('active')) {
+            whyMagcasePanel.classList.remove('active');
+            whyMagcaseToggle.classList.remove('active');
+        }
+    });
+
+    // Prevent clicks inside the panel from closing it
+    whyMagcasePanel.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+}
+
 // Mobile-specific: Auto-transform product cards when visible in viewport
 // Detect if device is mobile/touch-enabled
 const isMobileDevice = () => {
