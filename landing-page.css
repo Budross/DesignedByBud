@@ -57,6 +57,34 @@ body {
    HERO SECTION
    ============================================ */
 
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    padding: 20px 0 0 10px;
+    margin: 0;
+    width: 100%;
+    align-self: flex-start;
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--text-primary);
+    animation: fadeInUp 0.8s ease;
+}
+
+.site-header-logo {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 50%;
+    
+}
+
+.site-header-text {
+    letter-spacing: -0.01em;
+}
+
 .hero {
     position: relative;
     background: #fef7f0;
@@ -252,6 +280,105 @@ body {
     margin: 0 auto;
 }
 
+.section-subtitle.interactive-hint {
+    margin-top: 20px;
+    opacity: 0.8;
+}
+
+/* MagCase Description Expandable Section */
+.magcase-description {
+    margin-top: 30px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.why-magcase-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition-medium);
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.why-magcase-toggle:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(37, 99, 235, 0.02);
+}
+
+.why-magcase-toggle:active {
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.toggle-icon {
+    transition: transform var(--transition-medium);
+}
+
+.why-magcase-toggle.active .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.why-magcase-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+    opacity: 0;
+    margin-top: 0;
+}
+
+.why-magcase-panel.active {
+    max-height: 1200px;
+    opacity: 1;
+    margin-top: 24px;
+}
+
+.description-content {
+    background: #fef7f0;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.description-section {
+    margin-bottom: 24px;
+}
+
+.description-section:last-child {
+    margin-bottom: 0;
+}
+
+.description-section h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    margin-top: 0;
+}
+
+.description-section p {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+
+.description-section p:last-child {
+    margin-bottom: 0;
+}
+
 /* Product Link Button */
 .product-link {
     display: inline-block;
@@ -385,6 +512,7 @@ body {
     height: 70px;
     width: auto;
     object-fit: contain;
+    border-radius: 50%;
 }
 
 .footer-logo {
@@ -393,6 +521,7 @@ body {
     font-weight: 700;
     color: white;
     margin: 0;
+    border-radius: 50%;
 }
 
 .footer-tagline {
@@ -490,6 +619,16 @@ body {
         --section-padding: 50px 16px;
     }
 
+    .site-header {
+        padding: 15px 15px 0 15px;
+        gap: 12px;
+        font-size: clamp(1.25rem, 4vw, 1.75rem);
+    }
+
+    .site-header-logo {
+        height: 45px;
+    }
+
     .hero {
         min-height: 70vh;
     }
@@ -514,6 +653,23 @@ body {
 
     .section-header {
         margin-bottom: 40px;
+    }
+
+    .why-magcase-toggle {
+        padding: 9px 18px;
+        font-size: 0.9rem;
+    }
+
+    .description-content {
+        padding: 24px 20px;
+    }
+
+    .description-section h3 {
+        font-size: 1.1rem;
+    }
+
+    .description-section p {
+        font-size: 0.95rem;
     }
 
     .features-grid {
@@ -545,6 +701,16 @@ body {
 }
 
 @media (max-width: 480px) {
+    .site-header {
+        padding: 10px 10px 0 10px;
+        gap: 10px;
+        margin-left: 5%;
+    }
+
+    .site-header-logo {
+        height: 35px;
+    }
+
     .brand-name {
         font-size: 2rem;
     }

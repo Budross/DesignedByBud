@@ -1,19 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-H9BNLP339Y"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-    
-      gtag('config', 'G-H9BNLP339Y');
-    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="DesignedByBud - Explore our unique 3D-designed products available on Etsy. High-quality, custom-designed items for your home and life.">
-    <meta name="keywords" content="DesignedByBud, Etsy, 3D design, custom products, home accessories">
+    <meta name="description" content="DesignedByBud - Explore our custom 3D-designed products available on Etsy. High-quality, custom-designed items for your home and life.">
+    <meta name="keywords" content="DesignedByBud, Etsy, 3D design, custom products, home accessories, trading cards, magnetic card cases, organizers, trading card storage">
     <title>DesignedByBud - Unique 3D Designed Products</title>
 
     <!-- Google Fonts -->
@@ -27,12 +18,16 @@
 <body>
     <!-- ========== HERO SECTION ========== -->
     <header class="hero">
+        <h1 class="site-header">
+            <img src="graphics/DBB_LOGO.png" alt="DBB Logo" class="site-header-logo">
+            <span class="site-header-text">Designed By Bud</span>
+        </h1>
         <div class="hero-banner-container">
             <img src="graphics/EtsyBanner2.png" alt="DesignedByBud - Designs Built Better" class="hero-banner">
         </div>
         <div class="hero-content">
             <p class="hero-description">
-                Discover unique, handcrafted products made with precision and care.
+                Discover unique, high-quality hand crafted products made with precision and care.
                 Each piece is thoughtfully created to bring functionality and style to your everyday life.
                 Explore our collection and find the perfect addition to your home or gift for a loved one.
             </p>
@@ -52,8 +47,39 @@
     <!-- ========== PRODUCTS SECTION ========== -->
     <section class="products-section" id="products">
         <div class="section-header">
-            <h2 class="section-title">Our Featured Products</h2>
-            <p class="section-subtitle">Explore our collection in interactive 3D - drag to rotate any product</p>
+            <h2 class="section-title">MagCase Series</h2>
+            <p class="section-subtitle">Magnetic card cases designed for collectors who want easy access without the commitment of grading.</p>
+
+            <!-- Expandable "Why MagCase?" Section -->
+            <div class="magcase-description">
+                <button class="why-magcase-toggle">
+                    <span>Why MagCase?</span>
+                    <svg class="toggle-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <div class="why-magcase-panel">
+                    <div class="description-content">
+                        <div class="description-section">
+                            <h3>The Problem with Existing Solutions</h3>
+                            <p>Most card cases fall into two categories: cheap top-loaders that offer zero protection and premium one-touch cases that are expensive, bulky, and a pain to open repeatedly. If you wanted to show off your best ungraded cards that are too nice to leave in a binder—your options were limited and frustrating.</p>
+                        </div>
+
+                        <div class="description-section">
+                            <h3>The MagCase Design</h3>
+                            <p>The MagCase system uses embedded magnets for secure closure without the hassle of screw-down cases or the flimsiness of snap cases. You can open it one-handed, swap the card, and close it in seconds. The magnetic seal is strong enough to keep the card secured but smooth enough that you're not fighting to open it.</p>
+                            <p>What makes this system unique is the modularity. Every MagCase has interchangeable top and bottom pieces. Want your Charizard in a red and orange case? Your vintage Pikachu in yellow and black? You can mix and match colors to complement the card inside. I haven't seen anyone else doing this.</p>
+                        </div>
+
+                        <div class="description-section">
+                            <h3>Who This Is For</h3>
+                            <p>MagCases work with any trading card that fits a standard top-loader: Pokemon, sports cards, Yu-Gi-Oh, Magic: The Gathering. They're built for collectors who have cards they're proud of but never sent out for professional grading. MagCases give you a display-quality presentation without the commitment or cost of grading services.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="section-subtitle interactive-hint">Explore our collection in interactive 3D - drag to rotate any product</p>
         </div>
 
         <!-- Product Grid Container -->
@@ -224,5 +250,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-
-
