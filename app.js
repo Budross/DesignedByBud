@@ -101,7 +101,7 @@ const magcaseDescription = document.querySelector('.magcase-description');
 
 if (whyMagcaseToggle && whyMagcasePanel) {
     // Toggle button click handler
-    whyMagcaseToggle.addEventListener('click', (e) => {
+    whyMagcaseToggle.addEventListener('pointerdown', (e) => {
         e.stopPropagation(); // Prevent event from bubbling to document
         const isActive = whyMagcasePanel.classList.contains('active');
 
