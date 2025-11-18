@@ -49,20 +49,33 @@ products.forEach(product => {
         lightIntensity: 1,
         initialRotation: product.initialRotation
     });
+});
 
+// Load models sequentially to prevent overwhelming the browser
+function loadModelSequentially(index) {
+    if (index >= products.length) return;
+
+    const product = products[index];
     const loadingIndicator = document.getElementById(`loading-${product.id}`);
 
     viewers[product.id].loadOBJ(product.modelPath)
         .then(() => {
             loadingIndicator.style.display = 'none';
             console.log(`${product.id} loaded successfully`);
+            // Load next model
+            loadModelSequentially(index + 1);
         })
         .catch((error) => {
             loadingIndicator.textContent = 'Failed to load model';
             loadingIndicator.style.color = '#dc3545';
             console.error(`Error loading ${product.id}:`, error);
+            // Continue to next model even if this one failed
+            loadModelSequentially(index + 1);
         });
-});
+}
+
+// Start loading the first model
+loadModelSequentially(0);
 
 // Setup auto-rotate toggles
 document.querySelectorAll('.auto-rotate').forEach(checkbox => {
@@ -101,7 +114,8 @@ const magcaseDescription = document.querySelector('.magcase-description');
 
 if (whyMagcaseToggle && whyMagcasePanel) {
     // Toggle button click handler
-    whyMagcaseToggle.addEventListener('pointerdown', (e) => {
+    whyMagcaseToggle.addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent default behavior
         e.stopPropagation(); // Prevent event from bubbling to document
         const isActive = whyMagcasePanel.classList.contains('active');
 
