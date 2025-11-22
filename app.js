@@ -37,6 +37,9 @@ const products = [
 // Store viewer instances
 const viewers = {};
 
+// Track loading state for each product
+const loadingState = {};
+
 // Initialize all product viewers
 products.forEach(product => {
     viewers[product.id] = new OBJViewer(product.viewerId, {
@@ -49,33 +52,90 @@ products.forEach(product => {
         lightIntensity: 1,
         initialRotation: product.initialRotation
     });
+
+    // Initialize loading state
+    loadingState[product.id] = {
+        requested: false,
+        loaded: false
+    };
 });
 
-// Load models sequentially to prevent overwhelming the browser
-function loadModelSequentially(index) {
-    if (index >= products.length) return;
+// Load a specific model
+function loadModel(productId) {
+    const product = products.find(p => p.id === productId);
+    if (!product) return Promise.reject('Product not found');
 
-    const product = products[index];
+    const state = loadingState[productId];
+
+    // Prevent duplicate load attempts
+    if (state.requested) {
+        return Promise.resolve();
+    }
+
+    state.requested = true;
     const loadingIndicator = document.getElementById(`loading-${product.id}`);
 
-    viewers[product.id].loadOBJ(product.modelPath)
+    return viewers[product.id].loadOBJ(product.modelPath)
         .then(() => {
             loadingIndicator.style.display = 'none';
+            state.loaded = true;
             console.log(`${product.id} loaded successfully`);
-            // Load next model
-            loadModelSequentially(index + 1);
         })
         .catch((error) => {
             loadingIndicator.textContent = 'Failed to load model';
             loadingIndicator.style.color = '#dc3545';
             console.error(`Error loading ${product.id}:`, error);
-            // Continue to next model even if this one failed
-            loadModelSequentially(index + 1);
+            state.loaded = false;
+            state.requested = false; // Allow retry on error
         });
 }
 
-// Start loading the first model
-loadModelSequentially(0);
+// Lazy load models using Intersection Observer
+function setupLazyLoading() {
+    const observerOptions = {
+        root: null,
+        rootMargin: '100px', // Start loading slightly before entering viewport
+        threshold: 0.1 // Trigger when 10% of viewer is visible
+    };
+
+    const modelObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Find the product ID from the viewer element
+                const viewerId = entry.target.id;
+                const product = products.find(p => p.viewerId === viewerId);
+
+                if (product && !loadingState[product.id].requested) {
+                    console.log(`Loading ${product.id} (entered viewport)`);
+                    loadModel(product.id);
+                    // Stop observing once loading is triggered
+                    modelObserver.unobserve(entry.target);
+                }
+            }
+        });
+    }, observerOptions);
+
+    // Observe all viewer containers
+    products.forEach(product => {
+        const viewerElement = document.getElementById(product.viewerId);
+        if (viewerElement) {
+            modelObserver.observe(viewerElement);
+        }
+    });
+}
+
+// Initialize lazy loading after page resources are loaded
+function initializeDeferredLoading() {
+    // Wait for page load to complete (images, fonts, CSS)
+    if (document.readyState === 'complete') {
+        setupLazyLoading();
+    } else {
+        window.addEventListener('load', setupLazyLoading);
+    }
+}
+
+// Start the deferred loading process
+initializeDeferredLoading();
 
 // Setup auto-rotate toggles
 document.querySelectorAll('.auto-rotate').forEach(checkbox => {
