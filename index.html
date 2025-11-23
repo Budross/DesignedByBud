@@ -13,7 +13,32 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="landing-page.css?v=1.0.2">
-    <link rel="stylesheet" href="product-card.css?v=1.0.2">
+
+    <!-- Defer product-card.css to load after first contentful paint -->
+    <script>
+        // Load product-card.css asynchronously after FCP
+        function loadDeferredStyles() {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'product-card.css?v=1.0.2';
+            document.head.appendChild(link);
+        }
+
+        // Use requestAnimationFrame to defer until after paint
+        if (window.requestAnimationFrame) {
+            requestAnimationFrame(function() {
+                setTimeout(loadDeferredStyles, 0);
+            });
+        } else {
+            // Fallback for older browsers
+            window.addEventListener('load', loadDeferredStyles);
+        }
+    </script>
+
+    <!-- Fallback for users with JavaScript disabled -->
+    <noscript>
+        <link rel="stylesheet" href="product-card.css?v=1.0.2">
+    </noscript>
 </head>
 <body>
     <!-- ========== HERO SECTION ========== -->
