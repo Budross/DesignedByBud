@@ -137,13 +137,47 @@ function initializeDeferredLoading() {
 // Start the deferred loading process
 initializeDeferredLoading();
 
+// LocalStorage keys
+const STORAGE_KEYS = {
+    AUTO_ROTATE_PREFIX: 'autoRotate_',
+    MAGCASE_PANEL_OPEN: 'magcasePanelOpen'
+};
+
+// Restore auto-rotate preferences from localStorage
+function restoreAutoRotatePreferences() {
+    document.querySelectorAll('.auto-rotate').forEach(checkbox => {
+        const viewerId = checkbox.dataset.viewer;
+        const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
+        const savedState = localStorage.getItem(storageKey);
+
+        if (savedState !== null) {
+            const isChecked = savedState === 'true';
+            checkbox.checked = isChecked;
+            if (viewers[viewerId]) {
+                viewers[viewerId].config.autoRotate = isChecked;
+            }
+        }
+    });
+}
+
 // Setup auto-rotate toggles
 document.querySelectorAll('.auto-rotate').forEach(checkbox => {
     checkbox.addEventListener('change', (e) => {
         const viewerId = e.target.dataset.viewer;
-        viewers[viewerId].config.autoRotate = e.target.checked;
+        const isChecked = e.target.checked;
+
+        // Update viewer
+        viewers[viewerId].config.autoRotate = isChecked;
+
+        // Save preference to localStorage
+        const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
+        localStorage.setItem(storageKey, isChecked.toString());
+        console.log(`Saved auto-rotate preference for ${viewerId}: ${isChecked}`);
     });
 });
+
+// Restore preferences on page load
+restoreAutoRotatePreferences();
 
 // Setup reset buttons
 document.querySelectorAll('.reset-btn').forEach(button => {
@@ -173,6 +207,13 @@ const whyMagcasePanel = document.querySelector('.why-magcase-panel');
 const magcaseDescription = document.querySelector('.magcase-description');
 
 if (whyMagcaseToggle && whyMagcasePanel) {
+    // Restore panel state from localStorage
+    const savedPanelState = localStorage.getItem(STORAGE_KEYS.MAGCASE_PANEL_OPEN);
+    if (savedPanelState === 'true') {
+        whyMagcasePanel.classList.add('active');
+        whyMagcaseToggle.classList.add('active');
+    }
+
     // Toggle button click handler
     whyMagcaseToggle.addEventListener('click', (e) => {
         e.preventDefault(); // Prevent default behavior
@@ -183,10 +224,12 @@ if (whyMagcaseToggle && whyMagcasePanel) {
             // Close panel
             whyMagcasePanel.classList.remove('active');
             whyMagcaseToggle.classList.remove('active');
+            localStorage.setItem(STORAGE_KEYS.MAGCASE_PANEL_OPEN, 'false');
         } else {
             // Open panel
             whyMagcasePanel.classList.add('active');
             whyMagcaseToggle.classList.add('active');
+            localStorage.setItem(STORAGE_KEYS.MAGCASE_PANEL_OPEN, 'true');
         }
     });
 
@@ -196,6 +239,7 @@ if (whyMagcaseToggle && whyMagcasePanel) {
         if (!magcaseDescription.contains(e.target) && whyMagcasePanel.classList.contains('active')) {
             whyMagcasePanel.classList.remove('active');
             whyMagcaseToggle.classList.remove('active');
+            localStorage.setItem(STORAGE_KEYS.MAGCASE_PANEL_OPEN, 'false');
         }
     });
 
