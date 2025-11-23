@@ -60,6 +60,9 @@ function initializeViewers() {
             loaded: false
         };
     });
+
+    // After viewers are initialized, set up controls
+    initializeViewerControls();
 }
 
 // Wait for deferred CSS to load before initializing viewers
@@ -144,58 +147,61 @@ function initializeDeferredLoading() {
     }
 }
 
-// Start the deferred loading process
-initializeDeferredLoading();
-
 // LocalStorage keys
 const STORAGE_KEYS = {
     AUTO_ROTATE_PREFIX: 'autoRotate_',
     MAGCASE_PANEL_OPEN: 'magcasePanelOpen'
 };
 
-// Restore auto-rotate preferences from localStorage
-function restoreAutoRotatePreferences() {
-    document.querySelectorAll('.auto-rotate').forEach(checkbox => {
-        const viewerId = checkbox.dataset.viewer;
-        const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
-        const savedState = localStorage.getItem(storageKey);
+// Initialize viewer controls - called after viewers are created
+function initializeViewerControls() {
+    // Restore auto-rotate preferences from localStorage
+    function restoreAutoRotatePreferences() {
+        document.querySelectorAll('.auto-rotate').forEach(checkbox => {
+            const viewerId = checkbox.dataset.viewer;
+            const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
+            const savedState = localStorage.getItem(storageKey);
 
-        if (savedState !== null) {
-            const isChecked = savedState === 'true';
-            checkbox.checked = isChecked;
-            if (viewers[viewerId]) {
-                viewers[viewerId].config.autoRotate = isChecked;
+            if (savedState !== null) {
+                const isChecked = savedState === 'true';
+                checkbox.checked = isChecked;
+                if (viewers[viewerId]) {
+                    viewers[viewerId].config.autoRotate = isChecked;
+                }
             }
-        }
+        });
+    }
+
+    // Setup auto-rotate toggles
+    document.querySelectorAll('.auto-rotate').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const viewerId = e.target.dataset.viewer;
+            const isChecked = e.target.checked;
+
+            // Update viewer
+            viewers[viewerId].config.autoRotate = isChecked;
+
+            // Save preference to localStorage
+            const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
+            localStorage.setItem(storageKey, isChecked.toString());
+            console.log(`Saved auto-rotate preference for ${viewerId}: ${isChecked}`);
+        });
     });
+
+    // Restore preferences on page load
+    restoreAutoRotatePreferences();
+
+    // Setup reset buttons
+    document.querySelectorAll('.reset-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const viewerId = e.target.dataset.viewer;
+            viewers[viewerId].resetRotation();
+        });
+    });
+
+    // Start the deferred loading process for 3D models
+    initializeDeferredLoading();
 }
-
-// Setup auto-rotate toggles
-document.querySelectorAll('.auto-rotate').forEach(checkbox => {
-    checkbox.addEventListener('change', (e) => {
-        const viewerId = e.target.dataset.viewer;
-        const isChecked = e.target.checked;
-
-        // Update viewer
-        viewers[viewerId].config.autoRotate = isChecked;
-
-        // Save preference to localStorage
-        const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
-        localStorage.setItem(storageKey, isChecked.toString());
-        console.log(`Saved auto-rotate preference for ${viewerId}: ${isChecked}`);
-    });
-});
-
-// Restore preferences on page load
-restoreAutoRotatePreferences();
-
-// Setup reset buttons
-document.querySelectorAll('.reset-btn').forEach(button => {
-    button.addEventListener('click', (e) => {
-        const viewerId = e.target.dataset.viewer;
-        viewers[viewerId].resetRotation();
-    });
-});
 
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
