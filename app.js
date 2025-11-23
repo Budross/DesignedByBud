@@ -42,7 +42,21 @@ const loadingState = {};
 
 // Initialize all product viewers - wrapped in function to call after CSS loads
 function initializeViewers() {
+    console.log('Initializing 3D viewers after CSS layout...');
+
     products.forEach(product => {
+        // Validate container dimensions before initializing Three.js
+        const container = document.getElementById(product.viewerId);
+        if (container) {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            console.log(`${product.id} container dimensions: ${width}x${height}`);
+
+            if (width === 0 || height === 0) {
+                console.warn(`WARNING: ${product.id} container has zero dimensions! CSS may not be applied yet.`);
+            }
+        }
+
         viewers[product.id] = new OBJViewer(product.viewerId, {
             backgroundColor: 0xf8f9fa,
             modelColor: product.color,
@@ -61,16 +75,40 @@ function initializeViewers() {
         };
     });
 
+    console.log('All 3D viewers initialized successfully');
+
     // After viewers are initialized, set up controls
     initializeViewerControls();
 }
 
-// Wait for deferred CSS to load before initializing viewers
+// Wait for deferred CSS to load AND be applied before initializing viewers
 if (window.waitForDeferredCSS) {
-    window.waitForDeferredCSS(initializeViewers);
+    window.waitForDeferredCSS(() => {
+        // CSS file is loaded, but we need to wait for the browser to:
+        // 1. Parse the CSS
+        // 2. Apply styles to the DOM
+        // 3. Calculate layout and dimensions
+        // Use requestAnimationFrame to wait for next paint, then a small timeout
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                initializeViewers();
+            }, 50); // Small delay to ensure layout is calculated
+        });
+    });
 } else {
     // Fallback if deferred CSS system isn't available
-    initializeViewers();
+    // Wait for DOMContentLoaded + layout calculation
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            requestAnimationFrame(() => {
+                setTimeout(initializeViewers, 50);
+            });
+        });
+    } else {
+        requestAnimationFrame(() => {
+            setTimeout(initializeViewers, 50);
+        });
+    }
 }
 
 // Load a specific model
