@@ -16,13 +16,37 @@
 
     <!-- Defer product-card.css to load after first contentful paint -->
     <script>
+        // Flag to track when deferred CSS is loaded
+        window.deferredCSSLoaded = false;
+        window.deferredCSSCallbacks = [];
+
         // Load product-card.css asynchronously after FCP
         function loadDeferredStyles() {
             var link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = 'product-card.css?v=1.0.2';
+
+            // Notify when CSS is fully loaded
+            link.onload = function() {
+                window.deferredCSSLoaded = true;
+                // Execute any callbacks waiting for CSS to load
+                window.deferredCSSCallbacks.forEach(function(callback) {
+                    callback();
+                });
+                window.deferredCSSCallbacks = [];
+            };
+
             document.head.appendChild(link);
         }
+
+        // Helper function for scripts to wait for deferred CSS
+        window.waitForDeferredCSS = function(callback) {
+            if (window.deferredCSSLoaded) {
+                callback();
+            } else {
+                window.deferredCSSCallbacks.push(callback);
+            }
+        };
 
         // Use requestAnimationFrame to defer until after paint
         if (window.requestAnimationFrame) {

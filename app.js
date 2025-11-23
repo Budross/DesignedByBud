@@ -40,25 +40,35 @@ const viewers = {};
 // Track loading state for each product
 const loadingState = {};
 
-// Initialize all product viewers
-products.forEach(product => {
-    viewers[product.id] = new OBJViewer(product.viewerId, {
-        backgroundColor: 0xf8f9fa,
-        modelColor: product.color,
-        enableRotation: true,
-        autoRotate: false,
-        autoRotateSpeed: 0.3,
-        autoRotateAxis: product.autoRotateAxis,
-        lightIntensity: 1,
-        initialRotation: product.initialRotation
-    });
+// Initialize all product viewers - wrapped in function to call after CSS loads
+function initializeViewers() {
+    products.forEach(product => {
+        viewers[product.id] = new OBJViewer(product.viewerId, {
+            backgroundColor: 0xf8f9fa,
+            modelColor: product.color,
+            enableRotation: true,
+            autoRotate: false,
+            autoRotateSpeed: 0.3,
+            autoRotateAxis: product.autoRotateAxis,
+            lightIntensity: 1,
+            initialRotation: product.initialRotation
+        });
 
-    // Initialize loading state
-    loadingState[product.id] = {
-        requested: false,
-        loaded: false
-    };
-});
+        // Initialize loading state
+        loadingState[product.id] = {
+            requested: false,
+            loaded: false
+        };
+    });
+}
+
+// Wait for deferred CSS to load before initializing viewers
+if (window.waitForDeferredCSS) {
+    window.waitForDeferredCSS(initializeViewers);
+} else {
+    // Fallback if deferred CSS system isn't available
+    initializeViewers();
+}
 
 // Load a specific model
 function loadModel(productId) {
