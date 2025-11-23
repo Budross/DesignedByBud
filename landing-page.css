@@ -145,7 +145,7 @@ body {
     object-fit: contain;
     object-position: center;
     /* Crop 5% from top and 5% from bottom */
-    clip-path: inset(5% 0% 5% 0%);
+    clip-path: inset(5% 0% 0% 0%);
     filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.1));
     animation: fadeInUp 1s ease;
 }
@@ -832,3 +832,4 @@ input:focus {
         border: 2px solid var(--text-secondary);
     }
 }
+
