@@ -1,0 +1,44 @@
+# Cache Control Headers for GitHub Pages
+# Note: GitHub Pages has limited support for custom headers
+# This file follows Netlify's _headers format, which may or may not be fully supported
+
+# HTML files - short cache with revalidation
+/*.html
+  Cache-Control: public, max-age=3600, must-revalidate
+
+# CSS files - long cache with versioning
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+# JavaScript files - long cache with versioning
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Images and graphics - long cache
+/graphics/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 3D model files - very long cache (rarely change)
+/products/*.obj
+  Cache-Control: public, max-age=31536000, immutable
+
+/products/*.mtl
+  Cache-Control: public, max-age=31536000, immutable
+
+# Service Worker - no cache (always get latest)
+/service-worker.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Fonts (if self-hosted in the future)
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.woff
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.ttf
+  Cache-Control: public, max-age=31536000, immutable
+
+# Default fallback
+/*
+  Cache-Control: public, max-age=86400
