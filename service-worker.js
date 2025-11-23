@@ -3,7 +3,7 @@
  * Implements caching strategies for optimal repeat visitor performance
  */
 
-const CACHE_VERSION = 'v1.0.1';
+const CACHE_VERSION = 'v1.0.2';
 const CACHE_NAME = `designedbybud-${CACHE_VERSION}`;
 
 // Assets to precache on installation (critical resources)
@@ -14,7 +14,7 @@ const PRECACHE_ASSETS = [
     '/product-card.css',
     '/app.js',
     '/obj-viewer.js',
-    '/graphics/DBB_LOGO.png',
+    '/graphics/DBB_LOGO.webp',
     '/graphics/WebsiteBanner.webp'
 ];
 
