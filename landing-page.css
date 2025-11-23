@@ -60,9 +60,9 @@ body {
 .site-header {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     gap: 16px;
-    padding: 20px 0 0 10px;
+    padding: 20px 20px 0 10px;
     margin: 0;
     width: 100%;
     align-self: flex-start;
@@ -71,6 +71,12 @@ body {
     font-weight: 700;
     color: var(--text-primary);
     animation: fadeInUp 0.8s ease;
+}
+
+.site-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
 .site-header-logo {
@@ -83,6 +89,32 @@ body {
 
 .site-header-text {
     letter-spacing: -0.01em;
+}
+
+.header-etsy-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    transition: all var(--transition-medium);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    white-space: nowrap;
+}
+
+.header-etsy-button:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.header-etsy-button:active {
+    transform: translateY(0);
 }
 
 .hero {
@@ -625,8 +657,17 @@ body {
         font-size: clamp(1.25rem, 4vw, 1.75rem);
     }
 
+    .site-header-brand {
+        gap: 12px;
+    }
+
     .site-header-logo {
         height: 45px;
+    }
+
+    .header-etsy-button {
+        padding: 10px 18px;
+        font-size: 0.85rem;
     }
 
     .hero {
@@ -703,12 +744,21 @@ body {
 @media (max-width: 480px) {
     .site-header {
         padding: 10px 10px 0 10px;
-        gap: 10px;
+        gap: 8px;
         margin-left: 5%;
+    }
+
+    .site-header-brand {
+        gap: 8px;
     }
 
     .site-header-logo {
         height: 35px;
+    }
+
+    .header-etsy-button {
+        padding: 8px 12px;
+        font-size: 0.8rem;
     }
 
     .brand-name {
