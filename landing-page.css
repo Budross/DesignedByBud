@@ -91,32 +91,6 @@ body {
     letter-spacing: -0.01em;
 }
 
-.header-etsy-button {
-    display: inline-flex;
-    align-items: center;
-    padding: 12px 24px;
-    background: var(--primary-color);
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    transition: all var(--transition-medium);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-    white-space: nowrap;
-}
-
-.header-etsy-button:hover {
-    background: var(--primary-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
-}
-
-.header-etsy-button:active {
-    transform: translateY(0);
-}
-
 .hero {
     position: relative;
     background: #fef7f0;
@@ -141,13 +115,11 @@ body {
 
 .hero-banner {
     width: 100%;
-    height: auto;
+    height: 90%;
     object-fit: contain;
     object-position: center;
     /* Crop 5% from top and 5% from bottom */
-    clip-path: inset(5% 0% 0% 0%);
     filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.1));
-    animation: fadeInUp 1s ease;
 }
 
 .hero-content {
@@ -832,4 +804,5 @@ input:focus {
         border: 2px solid var(--text-secondary);
     }
 }
+
 
