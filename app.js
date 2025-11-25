@@ -40,6 +40,48 @@ const viewers = {};
 // Track loading state for each product
 const loadingState = {};
 
+// Check if CSS has been applied by verifying computed styles
+function isCSSApplied() {
+    // Check if any viewer-3d element has the expected height from CSS (280px)
+    const viewerElements = document.querySelectorAll('.viewer-3d');
+
+    if (viewerElements.length === 0) {
+        return false;
+    }
+
+    // Check the first viewer element's computed height
+    const firstViewer = viewerElements[0];
+    const computedStyle = window.getComputedStyle(firstViewer);
+    const height = parseInt(computedStyle.height, 10);
+
+    // CSS defines height: 280px, so check if it's been applied
+    // Allow for small variations but it should be > 0
+    return height > 0 && height >= 200; // Reasonable threshold
+}
+
+// Wait for CSS to be fully applied to the DOM
+function waitForCSSApplication(callback, maxAttempts = 20) {
+    let attempts = 0;
+
+    function checkCSS() {
+        attempts++;
+
+        if (isCSSApplied()) {
+            console.log(`CSS applied successfully after ${attempts} checks`);
+            callback();
+        } else if (attempts >= maxAttempts) {
+            console.warn('CSS application timeout - initializing anyway');
+            callback();
+        } else {
+            // Exponential backoff: 10ms, 20ms, 40ms, etc.
+            const delay = Math.min(10 * Math.pow(1.5, attempts), 100);
+            setTimeout(checkCSS, delay);
+        }
+    }
+
+    checkCSS();
+}
+
 // Initialize all product viewers - wrapped in function to call after CSS loads
 function initializeViewers() {
     console.log('Initializing 3D viewers after CSS layout...');
@@ -50,10 +92,11 @@ function initializeViewers() {
         if (container) {
             const width = container.clientWidth;
             const height = container.clientHeight;
-            console.log(`${product.id} container dimensions: ${width}x${height}`);
+            const computedHeight = window.getComputedStyle(container).height;
+            console.log(`${product.id} container dimensions: ${width}x${height} (computed: ${computedHeight})`);
 
             if (width === 0 || height === 0) {
-                console.warn(`WARNING: ${product.id} container has zero dimensions! CSS may not be applied yet.`);
+                console.error(`ERROR: ${product.id} container has zero dimensions! CSS not applied correctly.`);
             }
         }
 
@@ -84,15 +127,13 @@ function initializeViewers() {
 // Wait for deferred CSS to load AND be applied before initializing viewers
 if (window.waitForDeferredCSS) {
     window.waitForDeferredCSS(() => {
-        // CSS file is loaded, but we need to wait for the browser to:
-        // 1. Parse the CSS
-        // 2. Apply styles to the DOM
-        // 3. Calculate layout and dimensions
-        // Use requestAnimationFrame to wait for next paint, then a small timeout
+        // CSS file is loaded, now wait for browser to parse and apply styles
+        console.log('Deferred CSS loaded, waiting for styles to be applied...');
+
+        // Use requestAnimationFrame to wait for next paint
         requestAnimationFrame(() => {
-            setTimeout(() => {
-                initializeViewers();
-            }, 50); // Small delay to ensure layout is calculated
+            // Then poll for CSS application with smart retry logic
+            waitForCSSApplication(initializeViewers);
         });
     });
 } else {
@@ -101,12 +142,12 @@ if (window.waitForDeferredCSS) {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             requestAnimationFrame(() => {
-                setTimeout(initializeViewers, 50);
+                waitForCSSApplication(initializeViewers);
             });
         });
     } else {
         requestAnimationFrame(() => {
-            setTimeout(initializeViewers, 50);
+            waitForCSSApplication(initializeViewers);
         });
     }
 }
