@@ -22,19 +22,30 @@
 
         // Load product-card.css asynchronously after FCP
         function loadDeferredStyles() {
+            // Check if page is being reloaded
+            var navEntry = performance.getEntriesByType('navigation')[0];
+            var isReload = navEntry && navEntry.type === 'reload';
+
             var link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = 'product-card.css?v=1.0.2';
 
-            // Notify when CSS is fully loaded
-            link.onload = function() {
+            // On reload: load synchronously from cache
+            // On first load: use deferred loading with callback
+            if (!isReload) {
+                // Notify when CSS is fully loaded
+                link.onload = function() {
+                    window.deferredCSSLoaded = true;
+                    // Execute any callbacks waiting for CSS to load
+                    window.deferredCSSCallbacks.forEach(function(callback) {
+                        callback();
+                    });
+                    window.deferredCSSCallbacks = [];
+                };
+            } else {
+                // On reload, mark as loaded immediately (will load synchronously from cache)
                 window.deferredCSSLoaded = true;
-                // Execute any callbacks waiting for CSS to load
-                window.deferredCSSCallbacks.forEach(function(callback) {
-                    callback();
-                });
-                window.deferredCSSCallbacks = [];
-            };
+            }
 
             document.head.appendChild(link);
         }
@@ -58,14 +69,7 @@
             window.addEventListener('load', loadDeferredStyles);
         }
     </script>
-   <script type="application/ld+json">
-        {
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          "url": "https://designedbybud.com",
-          "logo": "https://designedbybud.com/graphics/DBB_LOGO.webp"
-        }
-    </script>
+
     <!-- Fallback for users with JavaScript disabled -->
     <noscript>
         <link rel="stylesheet" href="product-card.css?v=1.0.2">
@@ -82,7 +86,7 @@
         
         </h1>
         <div class="hero-banner-container">
-            <img src="graphics/WebsiteBanner.webp" fetchpriority=high alt="DesignedByBud - Designs Built Better" class="hero-banner">
+            <img src="graphics/WebsiteBanner.webp" alt="DesignedByBud - Designs Built Better" class="hero-banner">
         </div>
         <div class="hero-content">
             <p class="hero-description">
@@ -338,5 +342,3 @@
     </script>
 </body>
 </html>
-
-
