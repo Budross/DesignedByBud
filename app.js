@@ -60,7 +60,7 @@ function isCSSApplied() {
 }
 
 // Wait for CSS to be fully applied to the DOM
-function waitForCSSApplication(callback, maxAttempts = 20) {
+function waitForCSSApplication(callback, maxAttempts = 10) {
     let attempts = 0;
 
     function checkCSS() {
@@ -68,10 +68,20 @@ function waitForCSSApplication(callback, maxAttempts = 20) {
 
         if (isCSSApplied()) {
             console.log(`CSS applied successfully after ${attempts} checks`);
-            callback();
+            // Wait for two more animation frames to ensure layout is fully complete
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    callback();
+                });
+            });
         } else if (attempts >= maxAttempts) {
             console.warn('CSS application timeout - initializing anyway');
-            callback();
+            // Even on timeout, wait for layout to settle
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    callback();
+                });
+            });
         } else {
             // Exponential backoff: 10ms, 20ms, 40ms, etc.
             const delay = Math.min(10 * Math.pow(1.5, attempts), 100);
