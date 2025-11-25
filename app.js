@@ -92,6 +92,12 @@ function waitForCSSApplication(callback, maxAttempts = 10) {
     checkCSS();
 }
 
+// Check if page was reloaded (not first load)
+function isPageReloaded() {
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    return navEntry && navEntry.type === 'reload';
+}
+
 // Initialize all product viewers - wrapped in function to call after CSS loads
 function initializeViewers() {
     console.log('Initializing 3D viewers after CSS layout...');
@@ -133,17 +139,20 @@ function initializeViewers() {
     // After viewers are initialized, set up controls
     initializeViewerControls();
 
-    // Trigger a manual resize after a short delay to ensure CSS layout is complete
-    // This fixes issues with page refresh where CSS loads after initial render
-    setTimeout(() => {
-        console.log('Triggering manual resize for all viewers...');
-        products.forEach(product => {
-            if (viewers[product.id]) {
-                viewers[product.id].onWindowResize();
-            }
-        });
-        console.log('Manual resize complete');
-    }, 100);
+    // Check if page was reloaded and trigger resize to fix canvas dimensions
+    if (isPageReloaded()) {
+        console.log('Page reload detected - triggering canvas resize for all viewers');
+        // Use setTimeout to ensure all initialization is complete
+        setTimeout(() => {
+            products.forEach(product => {
+                if (viewers[product.id]) {
+                    viewers[product.id].onWindowResize();
+                    console.log(`Resized ${product.id} viewer`);
+                }
+            });
+            console.log('Reload resize complete');
+        }, 100);
+    }
 }
 
 // Wait for deferred CSS to load AND be applied before initializing viewers
