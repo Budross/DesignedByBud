@@ -22,30 +22,20 @@
 
         // Load product-card.css asynchronously after FCP
         function loadDeferredStyles() {
-            // Check if page is being reloaded
-            var navEntry = performance.getEntriesByType('navigation')[0];
-            var isReload = navEntry && navEntry.type === 'reload';
-
             var link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = 'product-card.css?v=1.0.2';
 
-            // On reload: load synchronously from cache
-            // On first load: use deferred loading with callback
-            if (!isReload) {
-                // Notify when CSS is fully loaded
-                link.onload = function() {
-                    window.deferredCSSLoaded = true;
-                    // Execute any callbacks waiting for CSS to load
-                    window.deferredCSSCallbacks.forEach(function(callback) {
-                        callback();
-                    });
-                    window.deferredCSSCallbacks = [];
-                };
-            } else {
-                // On reload, mark as loaded immediately (will load synchronously from cache)
+            // Always wait for onload callback to ensure CSS is fully parsed and applied
+            // Even on reload from cache, we need to wait for browser to apply styles
+            link.onload = function() {
                 window.deferredCSSLoaded = true;
-            }
+                // Execute any callbacks waiting for CSS to load
+                window.deferredCSSCallbacks.forEach(function(callback) {
+                    callback();
+                });
+                window.deferredCSSCallbacks = [];
+            };
 
             document.head.appendChild(link);
         }
