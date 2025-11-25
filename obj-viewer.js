@@ -76,6 +76,10 @@ class OBJViewer {
     // Handle window resize
     window.addEventListener('resize', () => this.onWindowResize());
 
+    // Watch for container size changes (e.g., when CSS loads late)
+    this.resizeObserver = new ResizeObserver(() => this.onWindowResize());
+    this.resizeObserver.observe(this.container);
+
     // Start animation loop
     this.animate();
   }
@@ -313,6 +317,9 @@ class OBJViewer {
   dispose() {
     // Clean up resources
     window.removeEventListener('resize', this.onWindowResize);
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
     if (this.model) {
       this.scene.remove(this.model);
     }

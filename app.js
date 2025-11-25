@@ -122,6 +122,18 @@ function initializeViewers() {
 
     // After viewers are initialized, set up controls
     initializeViewerControls();
+
+    // Trigger a manual resize after a short delay to ensure CSS layout is complete
+    // This fixes issues with page refresh where CSS loads after initial render
+    setTimeout(() => {
+        console.log('Triggering manual resize for all viewers...');
+        products.forEach(product => {
+            if (viewers[product.id]) {
+                viewers[product.id].onWindowResize();
+            }
+        });
+        console.log('Manual resize complete');
+    }, 100);
 }
 
 // Wait for deferred CSS to load AND be applied before initializing viewers
