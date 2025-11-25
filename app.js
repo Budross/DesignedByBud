@@ -60,7 +60,7 @@ function isCSSApplied() {
 }
 
 // Wait for CSS to be fully applied to the DOM
-function waitForCSSApplication(callback, maxAttempts = 10) {
+function waitForCSSApplication(callback, maxAttempts = 20) {
     let attempts = 0;
 
     function checkCSS() {
@@ -68,20 +68,10 @@ function waitForCSSApplication(callback, maxAttempts = 10) {
 
         if (isCSSApplied()) {
             console.log(`CSS applied successfully after ${attempts} checks`);
-            // Wait for two more animation frames to ensure layout is fully complete
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    callback();
-                });
-            });
+            callback();
         } else if (attempts >= maxAttempts) {
             console.warn('CSS application timeout - initializing anyway');
-            // Even on timeout, wait for layout to settle
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    callback();
-                });
-            });
+            callback();
         } else {
             // Exponential backoff: 10ms, 20ms, 40ms, etc.
             const delay = Math.min(10 * Math.pow(1.5, attempts), 100);
@@ -90,12 +80,6 @@ function waitForCSSApplication(callback, maxAttempts = 10) {
     }
 
     checkCSS();
-}
-
-// Check if page was reloaded (not first load)
-function isPageReloaded() {
-    const navEntry = performance.getEntriesByType('navigation')[0];
-    return navEntry && navEntry.type === 'reload';
 }
 
 // Initialize all product viewers - wrapped in function to call after CSS loads
@@ -139,18 +123,14 @@ function initializeViewers() {
     // After viewers are initialized, set up controls
     initializeViewerControls();
 
-    // Check if page was reloaded and trigger resize to fix canvas dimensions
-    if (isPageReloaded()) {
-        console.log('Page reload detected - triggering canvas resize for all viewers');
+    // Check if page was reloaded and trigger synthetic window resize to fix canvas dimensions
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'reload') {
+        console.log('Page reload detected - dispatching synthetic resize event');
         // Use setTimeout to ensure all initialization is complete
         setTimeout(() => {
-            products.forEach(product => {
-                if (viewers[product.id]) {
-                    viewers[product.id].onWindowResize();
-                    console.log(`Resized ${product.id} viewer`);
-                }
-            });
-            console.log('Reload resize complete');
+            window.dispatchEvent(new Event('resize'));
+            console.log('Synthetic resize event dispatched');
         }, 100);
     }
 }
