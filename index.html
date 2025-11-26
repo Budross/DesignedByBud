@@ -12,58 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="landing-page.css?v=1.0.2">
-
-    <!-- Defer product-card.css to load after first contentful paint -->
-    <script>
-        // Flag to track when deferred CSS is loaded
-        window.deferredCSSLoaded = false;
-        window.deferredCSSCallbacks = [];
-
-        // Load product-card.css asynchronously after FCP
-        function loadDeferredStyles() {
-            var link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = 'product-card.css?v=1.0.2';
-
-            // Always wait for onload callback to ensure CSS is fully parsed and applied
-            // Even on reload from cache, we need to wait for browser to apply styles
-            link.onload = function() {
-                window.deferredCSSLoaded = true;
-                // Execute any callbacks waiting for CSS to load
-                window.deferredCSSCallbacks.forEach(function(callback) {
-                    callback();
-                });
-                window.deferredCSSCallbacks = [];
-            };
-
-            document.head.appendChild(link);
-        }
-
-        // Helper function for scripts to wait for deferred CSS
-        window.waitForDeferredCSS = function(callback) {
-            if (window.deferredCSSLoaded) {
-                callback();
-            } else {
-                window.deferredCSSCallbacks.push(callback);
-            }
-        };
-
-        // Use requestAnimationFrame to defer until after paint
-        if (window.requestAnimationFrame) {
-            requestAnimationFrame(function() {
-                setTimeout(loadDeferredStyles, 0);
-            });
-        } else {
-            // Fallback for older browsers
-            window.addEventListener('load', loadDeferredStyles);
-        }
-    </script>
-
-    <!-- Fallback for users with JavaScript disabled -->
-    <noscript>
-        <link rel="stylesheet" href="product-card.css?v=1.0.2">
-    </noscript>
+    <!-- CSS loaded normally - deferred loading causes race conditions with Three.js -->
+    <link rel="stylesheet" href="landing-page.css?v=1.0.3">
+    <link rel="stylesheet" href="product-card.css?v=1.0.3">
 </head>
 <body>
     <!-- ========== HERO SECTION ========== -->
@@ -161,7 +112,7 @@
             </div>
 
             <!-- Product Card 2: Weighted-Base MagCase Organizer -->
-            <div class="product-card">
+            <div class="product-card button-shinyCard">
                 <div class="viewer-3d" id="viewer-weighted-magcase">
                     <div class="loading-indicator" id="loading-weighted-magcase">Loading 3D Model...</div>
                 </div>
@@ -183,7 +134,7 @@
             </div>
 
             <!-- Product Card 3: Weighted-Base 50-Card Organizer -->
-            <div class="product-card">
+            <div class="product-card button-shinyCard">
                 <div class="viewer-3d" id="viewer-weighted-50card">
                     <div class="loading-indicator" id="loading-weighted-50card">Loading 3D Model...</div>
                 </div>
@@ -297,10 +248,10 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
 
     <!-- OBJ Viewer Framework -->
-    <script src="obj-viewer.js?v=1.0.2"></script>
+    <script src="obj-viewer.js?v=1.0.3"></script>
 
     <!-- Application Logic -->
-    <script src="app.js?v=1.0.2"></script>
+    <script src="app.js?v=1.0.3"></script>
 
     <!-- Service Worker Registration -->
     <script>

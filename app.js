@@ -34,19 +34,11 @@ const products = [
     }
 ];
 
-// Store viewer instances (created on-demand when models load)
+// Store viewer instances
 const viewers = {};
 
 // Track loading state for each product
 const loadingState = {};
-
-// Initialize loading state for all products
-products.forEach(product => {
-    loadingState[product.id] = {
-        requested: false,
-        loaded: false
-    };
-});
 
 // LocalStorage keys
 const STORAGE_KEYS = {
@@ -54,56 +46,51 @@ const STORAGE_KEYS = {
     MAGCASE_PANEL_OPEN: 'magcasePanelOpen'
 };
 
-/**
- * Create an OBJViewer instance for a product
- * Called on-demand when the product card enters the viewport
- */
-function createViewer(product) {
-    const container = document.getElementById(product.viewerId);
-    
-    if (!container) {
-        console.error(`Container not found for ${product.id}`);
-        return null;
-    }
+// Initialize all product viewers
+function initializeViewers() {
+    console.log('Initializing 3D viewers...');
 
-    // Log dimensions for debugging
-    const width = container.clientWidth;
-    const height = container.clientHeight;
-    console.log(`Creating viewer for ${product.id}: ${width}x${height}`);
+    products.forEach(product => {
+        const container = document.getElementById(product.viewerId);
+        if (container) {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            console.log(`${product.id} container: ${width}x${height}`);
+        }
 
-    if (height < 100) {
-        console.warn(`Warning: ${product.id} container height is ${height}px - CSS may not be fully applied`);
-    }
+        // Check for saved auto-rotate preference
+        const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + product.id;
+        const savedAutoRotate = localStorage.getItem(storageKey);
+        const autoRotate = savedAutoRotate === 'true';
 
-    // Check for saved auto-rotate preference
-    const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + product.id;
-    const savedAutoRotate = localStorage.getItem(storageKey);
-    const autoRotate = savedAutoRotate === 'true';
+        viewers[product.id] = new OBJViewer(product.viewerId, {
+            backgroundColor: 0xf8f9fa,
+            modelColor: product.color,
+            enableRotation: true,
+            autoRotate: autoRotate,
+            autoRotateSpeed: 0.3,
+            autoRotateAxis: product.autoRotateAxis,
+            lightIntensity: 1,
+            initialRotation: product.initialRotation
+        });
 
-    const viewer = new OBJViewer(product.viewerId, {
-        backgroundColor: 0xf8f9fa,
-        modelColor: product.color,
-        enableRotation: true,
-        autoRotate: autoRotate,
-        autoRotateSpeed: 0.3,
-        autoRotateAxis: product.autoRotateAxis,
-        lightIntensity: 1,
-        initialRotation: product.initialRotation
+        // Initialize loading state
+        loadingState[product.id] = {
+            requested: false,
+            loaded: false
+        };
+
+        // Update checkbox to match saved state
+        const checkbox = document.querySelector(`.auto-rotate[data-viewer="${product.id}"]`);
+        if (checkbox) {
+            checkbox.checked = autoRotate;
+        }
     });
 
-    // Update checkbox state to match saved preference
-    const checkbox = document.querySelector(`.auto-rotate[data-viewer="${product.id}"]`);
-    if (checkbox) {
-        checkbox.checked = autoRotate;
-    }
-
-    return viewer;
+    console.log('All 3D viewers initialized');
 }
 
-/**
- * Load a specific model
- * Creates the OBJViewer instance on-demand if it doesn't exist
- */
+// Load a specific model
 function loadModel(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return Promise.reject('Product not found');
@@ -117,17 +104,6 @@ function loadModel(productId) {
 
     state.requested = true;
     const loadingIndicator = document.getElementById(`loading-${product.id}`);
-
-    // Create the viewer NOW - at this point the card is visible
-    // and CSS is definitely applied since the user can see the card
-    if (!viewers[product.id]) {
-        viewers[product.id] = createViewer(product);
-        
-        if (!viewers[product.id]) {
-            state.requested = false;
-            return Promise.reject('Failed to create viewer');
-        }
-    }
 
     return viewers[product.id].loadOBJ(product.modelPath)
         .then(() => {
@@ -144,15 +120,12 @@ function loadModel(productId) {
         });
 }
 
-/**
- * Setup lazy loading using Intersection Observer
- * Models (and their viewers) are only created when cards enter the viewport
- */
+// Lazy load models using Intersection Observer
 function setupLazyLoading() {
     const observerOptions = {
         root: null,
-        rootMargin: '100px', // Start loading slightly before entering viewport
-        threshold: 0.1 // Trigger when 10% of viewer is visible
+        rootMargin: '100px',
+        threshold: 0.1
     };
 
     const modelObserver = new IntersectionObserver((entries) => {
@@ -170,7 +143,6 @@ function setupLazyLoading() {
         });
     }, observerOptions);
 
-    // Observe all viewer containers
     products.forEach(product => {
         const viewerElement = document.getElementById(product.viewerId);
         if (viewerElement) {
@@ -179,10 +151,7 @@ function setupLazyLoading() {
     });
 }
 
-/**
- * Initialize controls for viewers
- * Sets up event listeners for auto-rotate checkboxes and reset buttons
- */
+// Initialize viewer controls
 function initializeControls() {
     // Setup auto-rotate toggles
     document.querySelectorAll('.auto-rotate').forEach(checkbox => {
@@ -190,27 +159,13 @@ function initializeControls() {
             const viewerId = e.target.dataset.viewer;
             const isChecked = e.target.checked;
 
-            // Update viewer if it exists
             if (viewers[viewerId]) {
                 viewers[viewerId].config.autoRotate = isChecked;
             }
 
-            // Save preference to localStorage (persists even before viewer is created)
             const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
             localStorage.setItem(storageKey, isChecked.toString());
-            console.log(`Saved auto-rotate preference for ${viewerId}: ${isChecked}`);
         });
-    });
-
-    // Restore checkbox states from localStorage
-    document.querySelectorAll('.auto-rotate').forEach(checkbox => {
-        const viewerId = checkbox.dataset.viewer;
-        const storageKey = STORAGE_KEYS.AUTO_ROTATE_PREFIX + viewerId;
-        const savedState = localStorage.getItem(storageKey);
-
-        if (savedState !== null) {
-            checkbox.checked = savedState === 'true';
-        }
     });
 
     // Setup reset buttons
@@ -224,23 +179,23 @@ function initializeControls() {
     });
 }
 
-/**
- * Main initialization
- * Sets up controls and lazy loading - viewers are created on-demand
- */
+// Main initialization - runs when DOM is ready
 function initialize() {
     console.log('Initializing application...');
     
-    // Setup UI controls (these work independently of viewers)
+    // Initialize 3D viewers
+    initializeViewers();
+    
+    // Setup UI controls
     initializeControls();
     
-    // Setup lazy loading for 3D models
+    // Setup lazy loading for models
     setupLazyLoading();
     
-    console.log('Application initialized - viewers will be created on-demand');
+    console.log('Application ready');
 }
 
-// Start initialization when DOM is ready
+// Wait for DOM to be ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
 } else {
@@ -267,14 +222,12 @@ const whyMagcasePanel = document.querySelector('.why-magcase-panel');
 const magcaseDescription = document.querySelector('.magcase-description');
 
 if (whyMagcaseToggle && whyMagcasePanel) {
-    // Restore panel state from localStorage
     const savedPanelState = localStorage.getItem(STORAGE_KEYS.MAGCASE_PANEL_OPEN);
     if (savedPanelState === 'true') {
         whyMagcasePanel.classList.add('active');
         whyMagcaseToggle.classList.add('active');
     }
 
-    // Toggle button click handler
     whyMagcaseToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -291,7 +244,6 @@ if (whyMagcaseToggle && whyMagcasePanel) {
         }
     });
 
-    // Click outside to close panel
     document.addEventListener('click', (e) => {
         if (!magcaseDescription.contains(e.target) && whyMagcasePanel.classList.contains('active')) {
             whyMagcasePanel.classList.remove('active');
@@ -300,13 +252,12 @@ if (whyMagcaseToggle && whyMagcasePanel) {
         }
     });
 
-    // Prevent clicks inside the panel from closing it
     whyMagcasePanel.addEventListener('click', (e) => {
         e.stopPropagation();
     });
 }
 
-// Mobile-specific: Auto-transform product cards when visible in viewport
+// Mobile-specific: Auto-transform product cards when visible
 const isMobileDevice = () => {
     return (
         'ontouchstart' in window ||
@@ -316,19 +267,13 @@ const isMobileDevice = () => {
 };
 
 if (isMobileDevice()) {
-    const observerOptions = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.2
-    };
-
     const cardObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('mobile-visible');
             }
         });
-    }, observerOptions);
+    }, { threshold: 0.2 });
 
     document.querySelectorAll('.product-card').forEach(card => {
         cardObserver.observe(card);
