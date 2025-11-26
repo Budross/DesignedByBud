@@ -40,46 +40,80 @@ const viewers = {};
 // Track loading state for each product
 const loadingState = {};
 
-// Check if CSS has been applied by verifying computed styles
+// Expected height from CSS (product-card.css defines .viewer-3d height: 280px)
+const EXPECTED_VIEWER_HEIGHT = 280;
+const EXPECTED_VIEWER_HEIGHT_MOBILE = 250; // Mobile breakpoint uses 250px
+
+/**
+ * Get the expected viewer height based on current viewport
+ * CSS breakpoints: 280px default, 250px at max-width: 768px
+ */
+function getExpectedViewerHeight() {
+    return window.innerWidth <= 768 ? EXPECTED_VIEWER_HEIGHT_MOBILE : EXPECTED_VIEWER_HEIGHT;
+}
+
+/**
+ * Check if CSS has been fully applied by verifying computed styles
+ * More strict checking than before - requires exact expected height
+ */
 function isCSSApplied() {
-    // Check if any viewer-3d element has the expected height from CSS (280px)
     const viewerElements = document.querySelectorAll('.viewer-3d');
 
     if (viewerElements.length === 0) {
         return false;
     }
 
-    // Check the first viewer element's computed height
+    // Check the first viewer element's actual rendered height
     const firstViewer = viewerElements[0];
-    const computedStyle = window.getComputedStyle(firstViewer);
-    const height = parseInt(computedStyle.height, 10);
+    const height = firstViewer.clientHeight;
+    const expectedHeight = getExpectedViewerHeight();
 
-    // CSS defines height: 280px, so check if it's been applied
-    // Allow for small variations but it should be > 0
-    return height > 0 && height >= 200; // Reasonable threshold
+    // Check if height matches expected value (allow 5px tolerance for rounding)
+    return height >= expectedHeight - 5;
 }
 
-// Wait for CSS to be fully applied to the DOM
-function waitForCSSApplication(callback, maxAttempts = 20) {
+/**
+ * Wait for CSS to be fully applied to the DOM
+ * Uses requestAnimationFrame for proper synchronization with browser rendering
+ */
+function waitForCSSApplication(callback, maxAttempts = 60) {
     let attempts = 0;
 
     function checkCSS() {
         attempts++;
 
-        if (isCSSApplied()) {
-            console.log(`CSS applied successfully after ${attempts} checks`);
+        const viewerElements = document.querySelectorAll('.viewer-3d');
+        if (viewerElements.length === 0) {
+            if (attempts >= maxAttempts) {
+                console.warn('CSS application timeout - no viewer elements found');
+                callback();
+            } else {
+                requestAnimationFrame(checkCSS);
+            }
+            return;
+        }
+
+        const firstViewer = viewerElements[0];
+        const height = firstViewer.clientHeight;
+        const expectedHeight = getExpectedViewerHeight();
+
+        if (height >= expectedHeight - 5) {
+            console.log(`CSS applied successfully after ${attempts} frames (height: ${height}px, expected: ${expectedHeight}px)`);
             callback();
         } else if (attempts >= maxAttempts) {
-            console.warn('CSS application timeout - initializing anyway');
+            console.warn(`CSS application timeout after ${attempts} frames - height is ${height}px, expected ${expectedHeight}px. Initializing anyway.`);
             callback();
         } else {
-            // Exponential backoff: 10ms, 20ms, 40ms, etc.
-            const delay = Math.min(10 * Math.pow(1.5, attempts), 100);
-            setTimeout(checkCSS, delay);
+            // Use requestAnimationFrame for each check - syncs with browser paint cycle
+            requestAnimationFrame(checkCSS);
         }
     }
 
-    checkCSS();
+    // Force a reflow to ensure any pending style calculations are processed
+    document.body.offsetHeight;
+
+    // Start checking on next animation frame
+    requestAnimationFrame(checkCSS);
 }
 
 // Initialize all product viewers - wrapped in function to call after CSS loads
@@ -120,6 +154,41 @@ function initializeViewers() {
 
     console.log('All 3D viewers initialized successfully');
 
+    // Force resize all viewers after a short delay to catch any missed layout calculations
+    // This is a safety net for edge cases where dimensions weren't fully computed
+    setTimeout(() => {
+        let resizeNeeded = false;
+        Object.keys(viewers).forEach(viewerId => {
+            const viewer = viewers[viewerId];
+            const container = viewer.container;
+            const canvas = viewer.renderer.domElement;
+
+            // Check if canvas dimensions match container dimensions
+            if (canvas.width !== container.clientWidth * window.devicePixelRatio ||
+                canvas.height !== container.clientHeight * window.devicePixelRatio) {
+                resizeNeeded = true;
+                viewer.onWindowResize();
+                console.log(`Resized ${viewerId} canvas to match container`);
+            }
+        });
+
+        if (resizeNeeded) {
+            console.log('Post-initialization resize completed');
+        }
+    }, 100);
+
+    // Additional resize check after fonts and other resources fully load
+    if (document.readyState !== 'complete') {
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                Object.values(viewers).forEach(viewer => {
+                    viewer.onWindowResize();
+                });
+                console.log('Post-load resize completed');
+            }, 50);
+        });
+    }
+
     // After viewers are initialized, set up controls
     initializeViewerControls();
 }
@@ -130,9 +199,12 @@ if (window.waitForDeferredCSS) {
         // CSS file is loaded, now wait for browser to parse and apply styles
         console.log('Deferred CSS loaded, waiting for styles to be applied...');
 
-        // Use requestAnimationFrame to wait for next paint
+        // Use requestAnimationFrame to wait for next paint cycle
         requestAnimationFrame(() => {
-            // Then poll for CSS application with smart retry logic
+            // Force a reflow before checking
+            document.body.offsetHeight;
+
+            // Then poll for CSS application using animation frames
             waitForCSSApplication(initializeViewers);
         });
     });
