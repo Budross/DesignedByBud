@@ -103,6 +103,13 @@
     font-weight: bold;
 }
 
+/* Ensure canvas fills the flex container properly */
+.product-card .viewer-3d canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+}
+
 /* Mobile-specific: Prevent page scrolling on 3D viewer touch */
 @media (hover: none) and (pointer: coarse) {
     .product-card .viewer-3d canvas {
