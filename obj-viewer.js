@@ -48,6 +48,7 @@ class OBJViewer {
     this.model = null;
     this.assembledModel = null;
     this.shelf = null;
+    this.directionalLight = null;
     
     // Control state management
     this.controls = {
@@ -139,7 +140,7 @@ class OBJViewer {
 
     const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8 * this.config.lightIntensity);
     directionalLight1.position.set(5, 5, 5);
-    directionalLight1.castShadow = true;
+    directionalLight1.castShadow = this.config.shelfVisible; // Only cast shadows when shelf is visible
     directionalLight1.shadow.mapSize.width = 1024; // Shadow resolution
     directionalLight1.shadow.mapSize.height = 1024;
     directionalLight1.shadow.camera.left = -5;
@@ -148,6 +149,7 @@ class OBJViewer {
     directionalLight1.shadow.camera.bottom = -5;
     directionalLight1.shadow.camera.near = 0.5;
     directionalLight1.shadow.camera.far = 20;
+    this.directionalLight = directionalLight1; // Store reference for shadow control
     this.scene.add(directionalLight1);
 
     const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4 * this.config.lightIntensity);
@@ -411,6 +413,21 @@ class OBJViewer {
     // Enable/disable shadows based on shelf visibility
     this.renderer.shadowMap.enabled = visible;
 
+    // Toggle shadow casting on the directional light
+    if (this.directionalLight) {
+      this.directionalLight.castShadow = visible;
+    }
+
+    // Toggle shadow properties on all meshes in the model
+    if (this.model) {
+      this.model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = visible;
+          child.receiveShadow = visible;
+        }
+      });
+    }
+
     if (wasVisible !== visible) {
       if (visible) {
         this.resetRotation();
@@ -595,9 +612,9 @@ class OBJViewer {
                 shininess: 30
               });
             }
-            // Enable shadows on model
-            child.castShadow = true;
-            child.receiveShadow = true;
+            // Enable shadows on model only when shelf is visible
+            child.castShadow = this.config.shelfVisible;
+            child.receiveShadow = this.config.shelfVisible;
           }
         });
 
