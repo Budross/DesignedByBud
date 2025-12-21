@@ -289,3 +289,42 @@
     grid-template-columns: repeat(3, 1fr);
     max-width: 1400px;
 }
+
+/* Button container for product links */
+.product-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* View in 3D button - secondary style */
+.view-3d-link {
+    display: inline-block;
+    flex: 1;
+    padding: 12px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.view-3d-link:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.view-3d-link:active {
+    transform: translateY(0);
+}
+
+/* Update product-link for flex layout */
+.product-links .product-link {
+    flex: 1;
+    margin-top: 0;
+    width: auto;
+}

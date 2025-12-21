@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MagCase - Interactive 3D Viewer | DesignedByBud</title>
+    <meta name="description" content="Explore the MagCase in full interactive 3D. Customize colors, view on shelf display, and examine every detail.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Shared Product Viewer Styles -->
+    <link rel="stylesheet" href="product-viewer.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <a href="index.html" class="back-btn">
+                <span>←</span>
+                <span>Back to Gallery</span>
+            </a>
+            <h1 class="product-title-header">MagCase Modular Stand - 3D Viewer</h1>
+            <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="etsy-link">
+                <span>🛒</span>
+                <span>Shop on Etsy</span>
+            </a>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Viewer Section -->
+            <div class="viewer-section">
+                <div class="viewer-container" id="product-viewer">
+                    <div class="loading-indicator" id="loading-indicator">Loading 3D Model...</div>
+                </div>
+
+                <div class="viewer-controls">
+                    <!-- Rotation Controls -->
+                    <div class="control-group">
+                        <h3>Rotation</h3>
+                        <div class="control-row">
+                            <span class="control-label">Auto-Rotate</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="auto-rotate">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Display Controls -->
+                    <div class="control-group">
+                        <h3>Display Options</h3>
+                        <div class="control-row">
+                            <span class="control-label">Show Assembled</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="assembled-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="control-row">
+                            <span class="control-label">Show Shelf</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="shelf-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="reset-view">Reset View</button>
+                        <button class="btn btn-secondary" id="reset-all">Reset All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="info-card">
+                    <h2>About MagCase Modular Stand</h2>
+                    <p>Modular stand system for MagCase card display. Snap multiple stands together side-by-side with built-in magnets!</p>
+                    <ul>
+                        <li>Modular stand designed specifically for MagCases</li>
+                        <li>Magnets on both ends allow connecting multiple stands together</li>
+                        <li>Matte black finish</li>
+                        <li>Sold as add-on only (not available individually)</li>
+                        <li>Expandable display solution that grows with your collection</li>
+                    </ul>
+                </div>
+
+                <div class="info-card">
+                    <h2>Viewer Tips</h2>
+                    <p><strong>Rotate:</strong> Click and drag to rotate the model</p>
+                    <p><strong>Auto-Rotate:</strong> Enable automatic rotation</p>
+                    <p><strong>Assembled View:</strong> See the MagCase positioned on the stand</p>
+                    <p><strong>Shelf Display:</strong> See how it looks on a shelf</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+
+    <!-- OBJ Viewer -->
+    <script src="obj-viewer.js"></script>
+
+    <!-- Product Page Script -->
+    <script>
+        // Initialize viewer
+        let viewer;
+
+        /**
+         * Wait for Three.js dependencies to load
+         * This prevents race conditions where DOMContentLoaded fires before CDN scripts finish loading
+         */
+        function waitForDependencies(timeout = 10000) {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+
+                function check() {
+                    // Check if all required Three.js components are loaded
+                    if (typeof THREE !== 'undefined' &&
+                        typeof THREE.OBJLoader !== 'undefined' &&
+                        typeof THREE.MTLLoader !== 'undefined') {
+                        console.log('All Three.js dependencies loaded successfully');
+                        resolve();
+                    } else {
+                        // Check if we've exceeded timeout
+                        if (Date.now() - startTime > timeout) {
+                            reject(new Error('Timeout waiting for Three.js dependencies to load'));
+                        } else {
+                            // Check again in 50ms
+                            setTimeout(check, 50);
+                        }
+                    }
+                }
+
+                check();
+            });
+        }
+
+        /**
+         * Initialize the 3D viewer
+         */
+        function initializeViewer() {
+            // Create viewer instance
+            viewer = new OBJViewer('product-viewer', {
+                backgroundColor: 0xf5f0e8,
+                modelColor: 0x2c2c2c,
+                assembledModelColor: 0x4a90e2, // Blue color for assembled MagCase
+                enableRotation: true,
+                autoRotate: false,
+                autoRotateSpeed: 0.3,
+                autoRotateAxis: 'y',
+                initialRotation: { x: -Math.PI/2, y: 0, z: 0 },
+                shelfVisible: false,
+                shelfColor: 0x8B4513,
+                useRealWorldScale: true
+            });
+
+            // Load the model
+            viewer.loadOBJ('products/MagCase Modular Stand.obj')
+                .then(() => {
+                    console.log('Main model loaded successfully');
+                    // Load the assembled model
+                    return viewer.loadAssembledModel('products/MagCaseAssembled.obj');
+                })
+                .then(() => {
+                    document.getElementById('loading-indicator').style.display = 'none';
+                    console.log('All models loaded successfully');
+                })
+                .catch(error => {
+                    console.error('Error loading model:', error);
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    loadingIndicator.textContent = 'Failed to load model. Please refresh the page.';
+                    loadingIndicator.style.background = 'rgba(255, 235, 235, 0.95)';
+                    loadingIndicator.style.color = '#d32f2f';
+                });
+
+            // Setup controls
+            setupControls();
+        }
+
+        // Wait for DOM to be ready, then wait for dependencies, then initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForDependencies()
+                .then(() => {
+                    initializeViewer();
+                })
+                .catch(error => {
+                    console.error('Failed to load dependencies:', error);
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    loadingIndicator.textContent = 'Failed to load 3D viewer libraries. Please refresh the page.';
+                    loadingIndicator.style.background = 'rgba(255, 235, 235, 0.95)';
+                    loadingIndicator.style.color = '#d32f2f';
+                });
+        });
+
+        function setupControls() {
+            // Auto-rotate toggle
+            document.getElementById('auto-rotate').addEventListener('change', (e) => {
+                viewer.config.autoRotate = e.target.checked;
+            });
+
+            // Assembled view toggle
+            document.getElementById('assembled-toggle').addEventListener('change', (e) => {
+                viewer.setAssembledVisible(e.target.checked);
+            });
+
+            // Shelf toggle
+            document.getElementById('shelf-toggle').addEventListener('change', (e) => {
+                viewer.setShelfVisible(e.target.checked);
+            });
+
+            // Reset view button
+            document.getElementById('reset-view').addEventListener('click', () => {
+                viewer.resetRotation();
+            });
+
+            // Reset all button
+            document.getElementById('reset-all').addEventListener('click', () => {
+                // Reset rotation
+                viewer.resetRotation();
+
+                // Reset auto-rotate
+                viewer.config.autoRotate = false;
+                document.getElementById('auto-rotate').checked = false;
+
+                // Reset assembled view
+                viewer.setAssembledVisible(false);
+                document.getElementById('assembled-toggle').checked = false;
+
+                // Reset shelf
+                viewer.setShelfVisible(false);
+                document.getElementById('shelf-toggle').checked = false;
+            });
+        }
+    </script>
+</body>
+</html>
