@@ -51,6 +51,126 @@
             transform: none;
             box-shadow: none;
         }
+
+        /* Info Button */
+        .info-button {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #2563eb;
+            color: #2563eb;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Georgia', serif;
+            font-style: italic;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 5;
+        }
+
+        .info-button:hover {
+            background: #2563eb;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .info-button:active {
+            transform: scale(1.05);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 20px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .modal-content p {
+            font-size: 15px;
+            color: #495057;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .modal-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-content strong {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .info-button {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+                top: 12px;
+                right: 12px;
+            }
+
+            .modal-content {
+                padding: 24px;
+                max-width: 400px;
+            }
+
+            .modal-content h2 {
+                font-size: 20px;
+            }
+
+            .modal-content p {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -74,21 +194,10 @@
             <div class="viewer-section">
                 <div class="viewer-container" id="product-viewer">
                     <div class="loading-indicator" id="loading-indicator">Loading 3D Model...</div>
+                    <button class="info-button" id="info-button" aria-label="Viewer Tips">i</button>
                 </div>
 
                 <div class="viewer-controls">
-                    <!-- Rotation Controls -->
-                    <div class="control-group">
-                        <h3>Rotation</h3>
-                        <div class="control-row">
-                            <span class="control-label">Auto-Rotate</span>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="auto-rotate">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- Display Controls -->
                     <div class="control-group">
                         <h3>Display Options</h3>
@@ -143,16 +252,19 @@
                         <li>Create customizable shelf displays that evolve with your collection</li>
                     </ul>
                 </div>
-
-                <div class="info-card">
-                    <h2>Viewer Tips</h2>
-                    <p><strong>Rotate:</strong> Click and drag to rotate the model</p>
-                    <p><strong>Auto-Rotate:</strong> Enable automatic rotation</p>
-                    <p><strong>Shelf Display:</strong> See how it looks on a shelf</p>
-                    <p><strong>Assembled View:</strong> Toggle between individual and assembled model</p>
-                    <p><strong>Model Color:</strong> Customize the product color</p>
-                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal-overlay" id="info-modal">
+        <div class="modal-content">
+            <h2>Viewer Tips</h2>
+            <p><strong>Rotate:</strong> Click and drag to rotate the model</p>
+            <p><strong>Auto-Rotate:</strong> Enable automatic rotation</p>
+            <p><strong>Shelf Display:</strong> See how it looks on a shelf</p>
+            <p><strong>Assembled View:</strong> Toggle between individual and assembled model</p>
+            <p><strong>Model Color:</strong> Customize the product color</p>
         </div>
     </div>
 
@@ -252,11 +364,6 @@
         });
 
         function setupControls() {
-            // Auto-rotate toggle
-            document.getElementById('auto-rotate').addEventListener('change', (e) => {
-                viewer.config.autoRotate = e.target.checked;
-            });
-
             // Shelf toggle
             document.getElementById('shelf-toggle').addEventListener('change', (e) => {
                 viewer.setShelfVisible(e.target.checked);
@@ -316,11 +423,7 @@
             document.getElementById('reset-all').addEventListener('click', () => {
                 // Reset rotation
                 viewer.resetRotation();
-                
-                // Reset auto-rotate
-                viewer.config.autoRotate = false;
-                document.getElementById('auto-rotate').checked = false;
-                
+
                 // Reset shelf
                 viewer.setShelfVisible(false);
                 document.getElementById('shelf-toggle').checked = false;
@@ -350,6 +453,36 @@
                 }
             });
         }
+
+        // Info Modal Functionality
+        const infoButton = document.getElementById('info-button');
+        const infoModal = document.getElementById('info-modal');
+        const modalContent = document.querySelector('.modal-content');
+
+        // Show modal when info button is clicked
+        infoButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            infoModal.classList.add('show');
+        });
+
+        // Hide modal when clicking outside the modal content
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                infoModal.classList.remove('show');
+            }
+        });
+
+        // Prevent clicks inside modal content from closing the modal
+        modalContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Also support touch events for mobile
+        infoModal.addEventListener('touchend', (e) => {
+            if (e.target === infoModal) {
+                infoModal.classList.remove('show');
+            }
+        });
     </script>
 </body>
 </html>
