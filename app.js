@@ -12,7 +12,7 @@ const products = [
         id: 'weighted-magcase',
         viewerId: 'viewer-weighted-magcase',
         modelPath: 'products/Weighted-Base MagCase Organizer.obj',
-        color: 0x2ecc71,
+        color: 0x2c2c2c,
         initialRotation: { x: -Math.PI/4, y: 0, z: -Math.PI/4 },
         autoRotateAxis: 'y'
     },
@@ -20,7 +20,7 @@ const products = [
         id: 'weighted-50card',
         viewerId: 'viewer-weighted-50card',
         modelPath: 'products/Weighted-Base 50-Card Organizer.obj',
-        color: 0xe74c3c,
+        color: 0x2c2c2c,
         initialRotation: { x: -Math.PI/4, y: 0, z: -Math.PI/4 },
         autoRotateAxis: 'y'
     },
@@ -28,7 +28,7 @@ const products = [
         id: 'modular-stand',
         viewerId: 'viewer-modular-stand',
         modelPath: 'products/MagCase Modular Stand.obj',
-        color: 0x9b59b6,
+        color: 0x2c2c2c,
         initialRotation: { x: -Math.PI/4, y: 0, z: -Math.PI/4 },
         autoRotateAxis: 'y'
     }
@@ -459,4 +459,5 @@ if (isMobileDevice()) {
             }
         });
     });
+
 }
