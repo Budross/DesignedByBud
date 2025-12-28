@@ -59,13 +59,16 @@ class OBJViewer {
 
     // Camera orbital controls (always enabled to prevent model overlap)
     this.orbitalControls = {
-      enabled: false, // Set to true in init()
+      enabled: false,
       radius: this.config.cameraDistance,
       theta: 0, // Horizontal rotation angle
-      phi: Math.PI / 2, // 90° = horizontal view (matches old camera.position.z behavior)
-      target: new THREE.Vector3(0, 0, 0), // Look at center by default
-      minPhi: Math.PI / 12, // Allow almost top-down view
-      maxPhi: Math.PI - Math.PI / 12, // Allow almost bottom-up view
+      phi: Math.PI / 2,
+      target: new THREE.Vector3(0, 0, 0),
+      minPhi: Math.PI / 12,
+      maxPhi: Math.PI - Math.PI / 12,
+      // ADD THESE TWO LINES for horizontal rotation limits:
+      minTheta: -102 * (Math.PI / 180), // -102 degrees in radians
+      maxTheta: 102 * (Math.PI / 180),  // +102 degrees in radians
       rotationSensitivity: 0.005
     };
 
@@ -312,9 +315,16 @@ class OBJViewer {
     this.orbitalControls.theta -= deltaX * this.orbitalControls.rotationSensitivity;
     this.orbitalControls.phi += deltaY * this.orbitalControls.rotationSensitivity;
 
+    // Clamp phi (vertical rotation) - already exists
     this.orbitalControls.phi = Math.max(
       this.orbitalControls.minPhi,
       Math.min(this.orbitalControls.maxPhi, this.orbitalControls.phi)
+    );
+
+    // ADD THIS: Clamp theta (horizontal rotation) to ±100 degrees
+    this.orbitalControls.theta = Math.max(
+      this.orbitalControls.minTheta,
+      Math.min(this.orbitalControls.maxTheta, this.orbitalControls.theta)
     );
 
     this.updateCameraPosition();
