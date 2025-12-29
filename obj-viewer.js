@@ -371,8 +371,8 @@ class OBJViewer {
           this.selectedObject.group.position.x = newX;
 
           // If dragging a weighted-base or modular_stand, move all MagCaseAssembled objects with it
-          const isWeightedBase = this.selectedObject.objPath.toLowerCase().includes('weighted-base');
-          const isModularStand = this.selectedObject.objPath.toLowerCase().includes('modular_stand');
+          const isWeightedBase = this.selectedObject.objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
+          const isModularStand = this.selectedObject.objPath.toLowerCase().replace(/_/g, '-').includes('modular-stand');
           if (isWeightedBase || isModularStand) {
             this.moveChildrenWithBase(this.selectedObject);
           }
@@ -463,7 +463,7 @@ class OBJViewer {
           }
 
           // Check if weighted-base and count occupied slots
-          if (clickedObject.objPath.toLowerCase().includes('weighted-base')) {
+          if (clickedObject.objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base')) {
             const slots = this.weightedBaseSlots.get(clickedObject.id);
             if (slots) {
               snapState.occupiedSlots = slots.filter(s => s.assembledObj !== null).length;
@@ -588,8 +588,8 @@ class OBJViewer {
             this.selectedObject.group.position.x = newX;
 
             // If dragging a weighted-base or modular_stand, move all MagCaseAssembled objects with it
-            const isWeightedBase = this.selectedObject.objPath.toLowerCase().includes('weighted-base');
-            const isModularStand = this.selectedObject.objPath.toLowerCase().includes('modular_stand');
+            const isWeightedBase = this.selectedObject.objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
+            const isModularStand = this.selectedObject.objPath.toLowerCase().replace(/_/g, '-').includes('modular-stand');
             if (isWeightedBase || isModularStand) {
               this.moveChildrenWithBase(this.selectedObject);
             }
@@ -672,7 +672,7 @@ class OBJViewer {
           }
 
           // Check if weighted-base and count occupied slots
-          if (tappedObject.objPath.toLowerCase().includes('weighted-base')) {
+          if (tappedObject.objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base')) {
             const slots = this.weightedBaseSlots.get(tappedObject.id);
             if (slots) {
               snapState.occupiedSlots = slots.filter(s => s.assembledObj !== null).length;
@@ -882,7 +882,7 @@ class OBJViewer {
    */
   checkSnapTargets(draggedObject) {
     // Only MagCaseAssembled can snap to other objects
-    if (!draggedObject.objPath.toLowerCase().includes('magcaseassembled')) {
+    if (!draggedObject.objPath.toLowerCase().replace(/_/g, '').includes('magcaseassembled')) {
       return null;
     }
 
@@ -895,8 +895,8 @@ class OBJViewer {
     this.sceneObjects.forEach(obj => {
       if (obj === draggedObject) return; // Skip self
 
-      const isModularStand = obj.objPath.toLowerCase().includes('modular_stand');
-      const isWeightedBase = obj.objPath.toLowerCase().includes('weighted-base');
+      const isModularStand = obj.objPath.toLowerCase().replace(/_/g, '-').includes('modular-stand');
+      const isWeightedBase = obj.objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
 
       if (isModularStand || isWeightedBase) {
         // For modular_stand, check if already occupied (only 1 magcase allowed)
@@ -1607,7 +1607,7 @@ class OBJViewer {
           const originalMaterials = [];
           
           // Check if split colors should be used (MagCaseAssembled with colorB)
-          const isMagCaseAssembled = objPath.toLowerCase().includes('magcaseassembled');
+          const isMagCaseAssembled = objPath.toLowerCase().replace(/_/g, '').includes('magcaseassembled');
           const useSplitColor = isMagCaseAssembled && options.colorB;
           let splitMaterial = null;
           
@@ -1660,8 +1660,8 @@ class OBJViewer {
             innerGroup.rotation.z = options.rotation.z || 0;
           } else {
             // Auto-rotate certain models that need to be tilted back 90 degrees
-            const needsRotation = objPath.toLowerCase().includes('modular_stand') || 
-                                  objPath.toLowerCase().includes('weighted-base');
+            const needsRotation = objPath.toLowerCase().replace(/_/g, '-').includes('modular-stand') ||
+                                  objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
             if (needsRotation) {
               innerGroup.rotation.x = -Math.PI / 2; // Rotate 90 degrees backward
             }
@@ -1688,7 +1688,7 @@ class OBJViewer {
           outerGroup.position.y = shelfTopY + scaledSize.y / 2;
 
           // Move MagCase_modular_stand objects closer to front edge of shelf
-          if (objPath.toLowerCase().includes('modular_stand')) {
+          if (objPath.toLowerCase().replace(/_/g, '-').includes('modular-stand')) {
             outerGroup.position.z = 0.025;
           }
 
@@ -1718,7 +1718,7 @@ class OBJViewer {
           }
 
           // Initialize weighted-base slots if this is a weighted-base and depth is known
-          const isWeightedBase = objPath.toLowerCase().includes('weighted-base');
+          const isWeightedBase = objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
           if (isWeightedBase && this.assembledDepth !== null) {
             this.initializeWeightedBaseSlots(sceneObject);
           }
@@ -1773,7 +1773,7 @@ class OBJViewer {
     }
 
     // Handle weighted-base removal (NEW - Multi-Slot Feature)
-    const isWeightedBase = obj.objPath.toLowerCase().includes('weighted-base');
+    const isWeightedBase = obj.objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
     if (isWeightedBase) {
       // Unsnap all MagCaseAssembled objects in this weighted-base's slots
       const slots = this.weightedBaseSlots.get(obj.id);
