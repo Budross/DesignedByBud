@@ -751,11 +751,25 @@
                 function check() {
                     if (typeof THREE !== 'undefined' &&
                         typeof THREE.OBJLoader !== 'undefined' &&
-                        typeof THREE.MTLLoader !== 'undefined') {
+                        typeof THREE.MTLLoader !== 'undefined' &&
+                        typeof THREE.Raycaster !== 'undefined' &&
+                        typeof THREE.Vector2 !== 'undefined' &&
+                        typeof THREE.Vector3 !== 'undefined' &&
+                        typeof THREE.Box3 !== 'undefined') {
                         console.log('All Three.js dependencies loaded successfully');
                         resolve();
                     } else if (Date.now() - startTime > timeout) {
-                        reject(new Error('Timeout waiting for Three.js dependencies to load'));
+                        const missing = [];
+                        if (typeof THREE === 'undefined') missing.push('THREE');
+                        if (typeof THREE !== 'undefined') {
+                            if (typeof THREE.OBJLoader === 'undefined') missing.push('THREE.OBJLoader');
+                            if (typeof THREE.MTLLoader === 'undefined') missing.push('THREE.MTLLoader');
+                            if (typeof THREE.Raycaster === 'undefined') missing.push('THREE.Raycaster');
+                            if (typeof THREE.Vector2 === 'undefined') missing.push('THREE.Vector2');
+                            if (typeof THREE.Vector3 === 'undefined') missing.push('THREE.Vector3');
+                            if (typeof THREE.Box3 === 'undefined') missing.push('THREE.Box3');
+                        }
+                        reject(new Error('Timeout waiting for Three.js dependencies. Missing: ' + missing.join(', ')));
                     } else {
                         setTimeout(check, 50);
                     }
@@ -769,37 +783,57 @@
          * Initialize the 3D viewer
          */
         function initializeViewer() {
-            // Create viewer instance with shelf visible by default
-            viewer = new OBJViewer('product-viewer', {
-                backgroundColor: 0xf5f0e8,
-                modelColor: 0x4a90e2,
-                enableRotation: true,
-                autoRotate: false,
-                shelfVisible: true,  // Start with shelf visible for shelf builder
-                shelfColor: 0x8B4513,
-                useRealWorldScale: true,
-                selectionColor: 0x00ff00,
-                selectionEmissive: 0x002200
-            });
-
-            // Enable shadows for shelf-builder (keeps obj-viewer.js unchanged for main project)
-            viewer.renderer.shadowMap.enabled = true;
-            viewer.renderer.shadowMap.needsUpdate = true;
-
-            // Ensure directional light casts shadows
-            if (viewer.directionalLight) {
-                viewer.directionalLight.castShadow = true;
-            }
-
-            // Force update all scene objects to ensure shadow properties are active
-            viewer.sceneObjects.forEach(obj => {
-                obj.group.traverse(child => {
-                    if (child instanceof THREE.Mesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
+            try {
+                // Create viewer instance with shelf visible by default
+                viewer = new OBJViewer('product-viewer', {
+                    backgroundColor: 0xf5f0e8,
+                    modelColor: 0x4a90e2,
+                    enableRotation: true,
+                    autoRotate: false,
+                    shelfVisible: true,  // Start with shelf visible for shelf builder
+                    shelfColor: 0x8B4513,
+                    useRealWorldScale: true,
+                    selectionColor: 0x00ff00,
+                    selectionEmissive: 0x002200
                 });
-            });
+
+                // Verify viewer was created successfully
+                if (!viewer || !viewer.sceneObjects) {
+                    throw new Error('Viewer failed to initialize properly');
+                }
+
+                // Enable shadows for shelf-builder (keeps obj-viewer.js unchanged for main project)
+                viewer.renderer.shadowMap.enabled = true;
+                viewer.renderer.shadowMap.needsUpdate = true;
+
+                // Ensure directional light casts shadows
+                if (viewer.directionalLight) {
+                    viewer.directionalLight.castShadow = true;
+                }
+
+                // Force update all scene objects to ensure shadow properties are active
+                // sceneObjects is initialized as empty array, so this is safe
+                if (viewer.sceneObjects && Array.isArray(viewer.sceneObjects)) {
+                    viewer.sceneObjects.forEach(obj => {
+                        obj.group.traverse(child => {
+                            if (child instanceof THREE.Mesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                            }
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to initialize viewer:', error);
+                const loadingIndicator = document.getElementById('loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.textContent = 'Failed to initialize 3D viewer: ' + error.message;
+                    loadingIndicator.style.background = 'rgba(255, 235, 235, 0.95)';
+                    loadingIndicator.style.color = '#d32f2f';
+                    loadingIndicator.style.display = 'flex';
+                }
+                throw error;
+            }
 
             // Hide loading indicator
             document.getElementById('loading-indicator').style.display = 'none';
@@ -1100,5 +1134,27 @@
                 });
         });
     </script>
+
+    <!-- Newsletter Signup Section -->
+    <section class="newsletter-section">
+        <div class="newsletter-container">
+            <h2>Stay Updated!</h2>
+            <p>Subscribe to our newsletter for exclusive deals, new product launches, and design inspiration.</p>
+            <form
+                class="newsletter-form"
+                action="https://formspree.io/f/mlgepwrb"
+                method="POST"
+            >
+                <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    required
+                    aria-label="Email address"
+                >
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </section>
 </body>
 </html>
