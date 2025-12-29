@@ -1663,7 +1663,7 @@ class OBJViewer {
             const needsRotation = objPath.toLowerCase().replace(/_/g, '-').includes('modular-stand') ||
                                   objPath.toLowerCase().replace(/_/g, '-').includes('weighted-base');
             if (needsRotation) {
-              innerGroup.rotation.x = -Math.PI / 2; // Rotate 90 degrees backward
+              //innerGroup.rotation.x = -Math.PI / 2; // Rotate 90 degrees backward
             }
           }
 
