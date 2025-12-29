@@ -8,6 +8,13 @@
  * - Touch-optimized for mobile card interactions
  * - Memory-efficient cleanup
  *
+ * MULTI-OBJECT FEATURES (NEW):
+ * - addObjectToScene(): Add new objects from product cards
+ * - Object selection via click/tap (raycasting)
+ * - Horizontal drag movement along shelf
+ * - Visual selection indicators
+ * - Object management (remove, clear, reorder)
+ *
  * @example
  * const viewer = new OBJViewer('viewer-container', {
  *   backgroundColor: 0xf8f9fa,
@@ -15,6 +22,9 @@
  *   enableRotation: true
  * });
  * viewer.loadOBJ('path/to/model.obj');
+ * 
+ * // Multi-object usage:
+ * viewer.addObjectToScene('path/to/model.obj', { id: 'product-1', color: 0xff0000 });
  */
 
 class OBJViewer {
@@ -38,6 +48,10 @@ class OBJViewer {
       initialRotation: options.initialRotation || { x: 0, y: 0, z: 0 },
       shelfColor: options.shelfColor || 0x8B4513,
       shelfVisible: options.shelfVisible || false,
+      // Multi-object configuration (NEW)
+      shelfWidth: options.shelfWidth || 18,
+      selectionColor: options.selectionColor || 0x00ff00,
+      selectionEmissive: options.selectionEmissive || 0x003300,
       ...options
     };
 
@@ -88,6 +102,29 @@ class OBJViewer {
     // Animation frame ID for cleanup
     this.animationFrameId = null;
 
+    // ==========================================
+    // MULTI-OBJECT PROPERTIES (NEW)
+    // ==========================================
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    this.sceneObjects = []; // Array of { id, group, originalMaterials, bounds, baseShelfY, objPath }
+    this.selectedObject = null;
+    this.isDraggingObject = false;
+    this.dragStartX = 0;
+    this.objectStartX = 0;
+    this.selectionIndicator = null;
+
+    // Snap-to-object properties
+    this.snapThreshold = 0.2; // Distance threshold for snapping (units) - reduced from 0.5 to prevent "flying" between nearby objects
+    this.snapYOffset = 0.025; // Height offset when snapped on modular stand
+
+    // Multi-slot weighted-base properties
+    this.weightedBaseSlots = new Map(); // Maps weighted-base ID -> array of slot objects
+    this.maxSlotsPerBase = 10; // Maximum MagCaseAssembled objects per weighted-base
+    this.assembledDepth = null; // Depth of MagCaseAssembled (calculated from first one added)
+    this.assembledToSlot = new Map(); // Maps assembled object ID -> { baseId, slotIndex }
+    this.dragMode = null; // 'shelf' or 'weighted-base' - tracks current drag behavior
+
     this.init();
   }
 
@@ -111,7 +148,7 @@ class OBJViewer {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap at 2 for performance
-    this.renderer.shadowMap.enabled = false; // Initially disabled, enabled when shelf is shown
+    this.renderer.shadowMap.enabled = this.config.shelfVisible; // Enable shadows if shelf is initially visible
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Soft shadows for better quality
     this.container.appendChild(this.renderer.domElement);
 
@@ -120,6 +157,9 @@ class OBJViewer {
 
     // Create shelf
     this.createShelf();
+
+    // Create selection indicator (NEW)
+    this.createSelectionIndicator();
 
     // Setup mouse controls
     if (this.config.enableRotation) {
@@ -138,10 +178,10 @@ class OBJViewer {
    * Add three-point lighting setup
    */
   addLights() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5 * this.config.lightIntensity);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7 * this.config.lightIntensity);
     this.scene.add(ambientLight);
 
-    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8 * this.config.lightIntensity);
+    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5 * this.config.lightIntensity);
     directionalLight1.position.set(5, 5, 5);
     directionalLight1.castShadow = this.config.shelfVisible; // Only cast shadows when shelf is visible
     directionalLight1.shadow.mapSize.width = 1024; // Shadow resolution
@@ -224,32 +264,239 @@ class OBJViewer {
   }
 
   /**
+   * Create visual selection indicator (ring around selected object) (NEW)
+   */
+  createSelectionIndicator() {
+    const geometry = new THREE.RingGeometry(0.8, 1, 32);
+    const material = new THREE.MeshBasicMaterial({ 
+      color: this.config.selectionColor, 
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.6
+    });
+    this.selectionIndicator = new THREE.Mesh(geometry, material);
+    this.selectionIndicator.rotation.x = -Math.PI / 2; // Lay flat
+    this.selectionIndicator.visible = false;
+    this.scene.add(this.selectionIndicator);
+  }
+
+  /**
    * Setup interaction controls with improved touch support
+   * MODIFIED: Added object selection and dragging support
    */
   setupControls() {
     const canvas = this.renderer.domElement;
 
+    // Track if we're doing a click vs drag (NEW)
+    let mouseDownTime = 0;
+    let mouseDownPos = { x: 0, y: 0 };
+    const CLICK_THRESHOLD = 200; // ms
+    const MOVE_THRESHOLD = 5; // pixels
+
+    // Double-click detection
+    let lastClickTime = 0;
+    let lastClickedObject = null;
+    const DOUBLE_CLICK_THRESHOLD = 300; // ms
+
     // Mouse events
     const onMouseDown = (e) => {
-      this.controls.isDragging = true;
+      mouseDownTime = Date.now();
+      mouseDownPos = { x: e.clientX, y: e.clientY };
+
+      // Check if clicking on a scene object (NEW)
+      this.updateMousePosition(e);
+      const clickedObject = this.getObjectUnderMouse();
+
+      if (clickedObject && this.config.shelfVisible) {
+        // Start object dragging mode
+        this.isDraggingObject = true;
+        this.dragStartX = e.clientX;
+        this.dragStartY = e.clientY;
+        this.objectStartX = clickedObject.group.position.x;
+        this.objectStartZ = clickedObject.group.position.z;
+
+        // Determine drag mode based on whether object is in a weighted-base slot
+        const slotInfo = this.assembledToSlot.get(clickedObject.id);
+        this.dragMode = slotInfo ? 'weighted-base' : 'shelf';
+
+        this.selectObject(clickedObject);
+        canvas.style.cursor = 'grabbing';
+        return;
+      }
+
+      // Initialize camera rotation - update previousMousePosition to CURRENT position
+      // This prevents camera snap/jump when starting a new drag
       this.controls.previousMousePosition = { x: e.clientX, y: e.clientY };
+      this.controls.isDragging = true;
       canvas.style.cursor = 'grabbing';
     };
 
     const onMouseMove = (e) => {
+      // Handle object dragging (NEW)
+      if (this.isDraggingObject && this.selectedObject) {
+        const deltaX = e.clientX - this.dragStartX;
+        const deltaY = e.clientY - this.dragStartY;
+        const sensitivity = 0.01;
+
+        if (this.dragMode === 'weighted-base') {
+          // Z-axis dragging within weighted-base (map mouse Y to world Z)
+          const zSensitivity = 0.008;
+          let newZ = this.objectStartZ + deltaY * zSensitivity;
+
+          // Snap to nearest slot
+          newZ = this.checkWeightedBaseSlotSnapping(this.selectedObject, newZ);
+          this.selectedObject.group.position.z = newZ;
+
+          // Update shader uniforms for split-color materials
+          this.updateSplitColorShaderUniforms(this.selectedObject);
+
+          // Check if dragged far enough in X direction to exit weighted-base
+          const xDistance = Math.abs(deltaX * sensitivity);
+          if (xDistance > this.snapThreshold) {
+            // Exit weighted-base mode, return to shelf
+            this.unsnapObject(this.selectedObject);
+            this.dragMode = 'shelf';
+            this.objectStartX = this.selectedObject.group.position.x;
+          }
+
+        } else {
+          // X-axis dragging on shelf
+          let newX = this.objectStartX + deltaX * sensitivity;
+
+          // Clamp to shelf bounds
+          const halfShelf = this.config.shelfWidth / 2;
+          const objectHalfWidth = this.selectedObject.bounds.x / 2;
+          newX = Math.max(-halfShelf + objectHalfWidth, Math.min(halfShelf - objectHalfWidth, newX));
+
+          this.selectedObject.group.position.x = newX;
+
+          // If dragging a weighted-base or modular_stand, move all MagCaseAssembled objects with it
+          const isWeightedBase = this.selectedObject.objPath.toLowerCase().includes('weighted-base');
+          const isModularStand = this.selectedObject.objPath.toLowerCase().includes('modular_stand');
+          if (isWeightedBase || isModularStand) {
+            this.moveChildrenWithBase(this.selectedObject);
+          }
+
+          // Check for snap targets (NEW - Snap Feature)
+          const snapTarget = this.checkSnapTargets(this.selectedObject);
+          if (snapTarget) {
+            this.snapToObject(this.selectedObject, snapTarget);
+            // Reset drag references to prevent fighting the snap position
+            this.objectStartX = this.selectedObject.group.position.x;
+            this.dragStartX = e.clientX;
+            // If snapped to weighted-base, switch to that drag mode
+            if (snapTarget.type === 'weighted-base') {
+              this.dragMode = 'weighted-base';
+              this.objectStartZ = this.selectedObject.group.position.z;
+              this.dragStartY = e.clientY;
+            }
+          } else {
+            // Check if was previously in a slot and moved away
+            const slotInfo = this.assembledToSlot.get(this.selectedObject.id);
+            if (slotInfo) {
+              this.unsnapObject(this.selectedObject);
+            }
+          }
+        }
+
+        this.updateSelectionIndicator();
+        return;
+      }
+
       if (this.controls.isDragging) {
-        const deltaX = e.clientX - this.controls.previousMousePosition.x;
-        const deltaY = e.clientY - this.controls.previousMousePosition.y;
+        // Check if mouse has moved beyond threshold - prevents camera rotation on tiny clicks
+        const moveDist = Math.sqrt(
+          Math.pow(e.clientX - mouseDownPos.x, 2) +
+          Math.pow(e.clientY - mouseDownPos.y, 2)
+        );
 
-        // Always use orbital camera to prevent model overlap when rotating
-        this.updateOrbitalCamera(deltaX, deltaY);
+        // Only rotate camera if moved beyond threshold
+        if (moveDist >= MOVE_THRESHOLD) {
+          const deltaX = e.clientX - this.controls.previousMousePosition.x;
+          const deltaY = e.clientY - this.controls.previousMousePosition.y;
 
-        this.controls.previousMousePosition = { x: e.clientX, y: e.clientY };
+          // Always use orbital camera to prevent model overlap when rotating
+          this.updateOrbitalCamera(deltaX, deltaY);
+
+          this.controls.previousMousePosition = { x: e.clientX, y: e.clientY };
+        }
+      } else {
+        // Hover effect (NEW)
+        this.updateMousePosition(e);
+        const hoverObject = this.getObjectUnderMouse();
+        canvas.style.cursor = hoverObject && this.config.shelfVisible ? 'pointer' : 'grab';
       }
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (e) => {
+      const timeDiff = Date.now() - mouseDownTime;
+      const moveDist = Math.sqrt(
+        Math.pow(e.clientX - mouseDownPos.x, 2) +
+        Math.pow(e.clientY - mouseDownPos.y, 2)
+      );
+
+      // If it was a quick click without much movement, treat as selection (NEW)
+      if (timeDiff < CLICK_THRESHOLD && moveDist < MOVE_THRESHOLD) {
+        this.updateMousePosition(e);
+        const clickedObject = this.getObjectUnderMouse();
+
+        // Check for double-click
+        const currentTime = Date.now();
+        const timeSinceLastClick = currentTime - lastClickTime;
+
+        if (clickedObject &&
+            lastClickedObject &&
+            lastClickedObject === clickedObject &&
+            timeSinceLastClick > 0 &&
+            timeSinceLastClick < DOUBLE_CLICK_THRESHOLD) {
+          // Double-click detected!
+          console.log('Double-click detected on:', clickedObject.name, clickedObject);
+
+          // Determine snap state
+          let snapState = { isSnapped: false, snapType: null, occupiedSlots: 0 };
+
+          const slotInfo = this.assembledToSlot.get(clickedObject.id);
+          if (slotInfo) {
+            snapState.isSnapped = true;
+            snapState.snapType = slotInfo.slotIndex === null ? 'modular-stand' : 'weighted-base';
+            snapState.baseId = slotInfo.baseId;
+          }
+
+          // Check if weighted-base and count occupied slots
+          if (clickedObject.objPath.toLowerCase().includes('weighted-base')) {
+            const slots = this.weightedBaseSlots.get(clickedObject.id);
+            if (slots) {
+              snapState.occupiedSlots = slots.filter(s => s.assembledObj !== null).length;
+            }
+          }
+
+          const event = new CustomEvent('objectDoubleClicked', {
+            detail: {
+              id: clickedObject.id,
+              object: clickedObject,
+              name: clickedObject.name,
+              objPath: clickedObject.objPath,
+              snapState: snapState
+            }
+          });
+          this.container.dispatchEvent(event);
+          console.log('objectDoubleClicked event dispatched with snapState:', snapState);
+
+          // Reset double-click tracking
+          lastClickTime = 0;
+          lastClickedObject = null;
+        } else {
+          // Single click - select object
+          this.handleObjectSelection();
+
+          // Update double-click tracking
+          lastClickTime = currentTime;
+          lastClickedObject = clickedObject;
+        }
+      }
+
       this.controls.isDragging = false;
+      this.isDraggingObject = false;
       canvas.style.cursor = 'grab';
     };
 
@@ -260,16 +507,40 @@ class OBJViewer {
 
     // Touch support - prevents page scrolling while rotating
     let touchStartPos = { x: 0, y: 0 };
+    let touchStartTime = 0;
 
     const onTouchStart = (e) => {
       if (e.touches.length === 1) {
         e.preventDefault(); // Prevent page scroll
-        this.controls.isDragging = true;
+        touchStartTime = Date.now();
         touchStartPos = {
           x: e.touches[0].clientX,
           y: e.touches[0].clientY
         };
+
+        // Check if touching an object (NEW)
+        this.updateTouchPosition(e.touches[0]);
+        const touchedObject = this.getObjectUnderMouse();
+
+        if (touchedObject && this.config.shelfVisible) {
+          this.isDraggingObject = true;
+          this.dragStartX = e.touches[0].clientX;
+          this.dragStartY = e.touches[0].clientY;
+          this.objectStartX = touchedObject.group.position.x;
+          this.objectStartZ = touchedObject.group.position.z;
+
+          // Determine drag mode based on whether object is in a weighted-base slot
+          const slotInfo = this.assembledToSlot.get(touchedObject.id);
+          this.dragMode = slotInfo ? 'weighted-base' : 'shelf';
+
+          this.selectObject(touchedObject);
+          return;
+        }
+
+        // Initialize camera rotation - update previousMousePosition to CURRENT position
+        // This prevents camera snap/jump when starting a new drag
         this.controls.previousMousePosition = touchStartPos;
+        this.controls.isDragging = true;
       }
     };
 
@@ -277,21 +548,164 @@ class OBJViewer {
       if (this.controls.isDragging && e.touches.length === 1) {
         e.preventDefault(); // Prevent page scroll
         const touch = e.touches[0];
-        const deltaX = touch.clientX - this.controls.previousMousePosition.x;
-        const deltaY = touch.clientY - this.controls.previousMousePosition.y;
 
-        // Always use orbital camera to prevent model overlap when rotating
-        this.updateOrbitalCamera(deltaX, deltaY);
+        // Handle object dragging (NEW)
+        if (this.isDraggingObject && this.selectedObject) {
+          const deltaX = touch.clientX - this.dragStartX;
+          const deltaY = touch.clientY - this.dragStartY;
+          const sensitivity = 0.01;
 
-        this.controls.previousMousePosition = {
-          x: touch.clientX,
-          y: touch.clientY
-        };
+          if (this.dragMode === 'weighted-base') {
+            // Z-axis dragging within weighted-base (map touch Y to world Z)
+            const zSensitivity = 0.008;
+            let newZ = this.objectStartZ + deltaY * zSensitivity;
+
+            // Snap to nearest slot
+            newZ = this.checkWeightedBaseSlotSnapping(this.selectedObject, newZ);
+            this.selectedObject.group.position.z = newZ;
+
+            // Update shader uniforms for split-color materials
+            this.updateSplitColorShaderUniforms(this.selectedObject);
+
+            // Check if dragged far enough in X direction to exit weighted-base
+            const xDistance = Math.abs(deltaX * sensitivity);
+            if (xDistance > this.snapThreshold) {
+              // Exit weighted-base mode, return to shelf
+              this.unsnapObject(this.selectedObject);
+              this.dragMode = 'shelf';
+              this.objectStartX = this.selectedObject.group.position.x;
+            }
+
+          } else {
+            // X-axis dragging on shelf
+            let newX = this.objectStartX + deltaX * sensitivity;
+
+            // Clamp to shelf bounds
+            const halfShelf = this.config.shelfWidth / 2;
+            const objectHalfWidth = this.selectedObject.bounds.x / 2;
+            newX = Math.max(-halfShelf + objectHalfWidth, Math.min(halfShelf - objectHalfWidth, newX));
+
+            this.selectedObject.group.position.x = newX;
+
+            // If dragging a weighted-base or modular_stand, move all MagCaseAssembled objects with it
+            const isWeightedBase = this.selectedObject.objPath.toLowerCase().includes('weighted-base');
+            const isModularStand = this.selectedObject.objPath.toLowerCase().includes('modular_stand');
+            if (isWeightedBase || isModularStand) {
+              this.moveChildrenWithBase(this.selectedObject);
+            }
+
+            // Check for snap targets (NEW - Snap Feature)
+            const snapTarget = this.checkSnapTargets(this.selectedObject);
+            if (snapTarget) {
+              this.snapToObject(this.selectedObject, snapTarget);
+              // Reset drag references to prevent fighting the snap position
+              this.objectStartX = this.selectedObject.group.position.x;
+              this.dragStartX = touch.clientX;
+              // If snapped to weighted-base, switch to that drag mode
+              if (snapTarget.type === 'weighted-base') {
+                this.dragMode = 'weighted-base';
+                this.objectStartZ = this.selectedObject.group.position.z;
+                this.dragStartY = touch.clientY;
+              }
+            } else {
+              // Check if was previously in a slot and moved away
+              const slotInfo = this.assembledToSlot.get(this.selectedObject.id);
+              if (slotInfo) {
+                this.unsnapObject(this.selectedObject);
+              }
+            }
+          }
+
+          this.updateSelectionIndicator();
+          return;
+        }
+
+        // Check if touch has moved beyond threshold - prevents camera rotation on tiny taps
+        const moveDist = Math.sqrt(
+          Math.pow(touch.clientX - touchStartPos.x, 2) +
+          Math.pow(touch.clientY - touchStartPos.y, 2)
+        );
+
+        // Only rotate camera if moved beyond threshold
+        if (moveDist >= MOVE_THRESHOLD) {
+          const deltaX = touch.clientX - this.controls.previousMousePosition.x;
+          const deltaY = touch.clientY - this.controls.previousMousePosition.y;
+
+          // Always use orbital camera to prevent model overlap when rotating
+          this.updateOrbitalCamera(deltaX, deltaY);
+
+          this.controls.previousMousePosition = {
+            x: touch.clientX,
+            y: touch.clientY
+          };
+        }
       }
     };
 
-    const onTouchEnd = () => {
+    const onTouchEnd = (e) => {
+      const timeDiff = Date.now() - touchStartTime;
+
+      // If it was a quick tap, treat as selection or double-tap (NEW)
+      if (timeDiff < CLICK_THRESHOLD) {
+        const tappedObject = this.getObjectUnderMouse();
+
+        // Check for double-tap
+        const currentTime = Date.now();
+        const timeSinceLastClick = currentTime - lastClickTime;
+
+        if (tappedObject &&
+            lastClickedObject &&
+            lastClickedObject === tappedObject &&
+            timeSinceLastClick > 0 &&
+            timeSinceLastClick < DOUBLE_CLICK_THRESHOLD) {
+          // Double-tap detected!
+          console.log('Double-tap detected on:', tappedObject.name, tappedObject);
+
+          // Determine snap state
+          let snapState = { isSnapped: false, snapType: null, occupiedSlots: 0 };
+
+          const slotInfo = this.assembledToSlot.get(tappedObject.id);
+          if (slotInfo) {
+            snapState.isSnapped = true;
+            snapState.snapType = slotInfo.slotIndex === null ? 'modular-stand' : 'weighted-base';
+            snapState.baseId = slotInfo.baseId;
+          }
+
+          // Check if weighted-base and count occupied slots
+          if (tappedObject.objPath.toLowerCase().includes('weighted-base')) {
+            const slots = this.weightedBaseSlots.get(tappedObject.id);
+            if (slots) {
+              snapState.occupiedSlots = slots.filter(s => s.assembledObj !== null).length;
+            }
+          }
+
+          const event = new CustomEvent('objectDoubleClicked', {
+            detail: {
+              id: tappedObject.id,
+              object: tappedObject,
+              name: tappedObject.name,
+              objPath: tappedObject.objPath,
+              snapState: snapState
+            }
+          });
+          this.container.dispatchEvent(event);
+          console.log('objectDoubleClicked event dispatched (touch) with snapState:', snapState);
+
+          // Reset double-tap tracking
+          lastClickTime = 0;
+          lastClickedObject = null;
+        } else {
+          // Single tap - select object
+          this.handleObjectSelection();
+
+          // Update double-tap tracking
+          lastClickTime = currentTime;
+          lastClickedObject = tappedObject;
+        }
+      }
+
       this.controls.isDragging = false;
+      this.isDraggingObject = false;
     };
 
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
@@ -306,6 +720,403 @@ class OBJViewer {
     };
 
     canvas.style.cursor = 'grab';
+  }
+
+  // ==========================================
+  // MULTI-OBJECT HELPER METHODS (NEW)
+  // ==========================================
+
+  /**
+   * Update mouse position for raycasting (NEW)
+   */
+  updateMousePosition(event) {
+    const rect = this.container.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  }
+
+  /**
+   * Update touch position for raycasting (NEW)
+   */
+  updateTouchPosition(touch) {
+    const rect = this.container.getBoundingClientRect();
+    this.mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+  }
+
+  /**
+   * Get the scene object under the current mouse position (NEW)
+   */
+  getObjectUnderMouse() {
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    const meshes = [];
+    this.sceneObjects.forEach(obj => {
+      obj.group.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          meshes.push({ mesh: child, sceneObject: obj });
+        }
+      });
+    });
+
+    const intersects = this.raycaster.intersectObjects(meshes.map(m => m.mesh));
+
+    if (intersects.length > 0) {
+      const hitMesh = intersects[0].object;
+      const matchedObj = meshes.find(m => m.mesh === hitMesh);
+      return matchedObj ? matchedObj.sceneObject : null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Handle object selection on click/tap (NEW)
+   */
+  handleObjectSelection() {
+    const clickedObject = this.getObjectUnderMouse();
+
+    if (clickedObject) {
+      this.selectObject(clickedObject);
+    } else {
+      this.deselectObject();
+    }
+  }
+
+  /**
+   * Select an object and show visual feedback (NEW)
+   */
+  selectObject(sceneObject) {
+    if (this.selectedObject && this.selectedObject !== sceneObject) {
+      this.restoreObjectMaterials(this.selectedObject);
+    }
+
+    this.selectedObject = sceneObject;
+    this.highlightObject(sceneObject);
+    this.updateSelectionIndicator();
+
+    const event = new CustomEvent('objectSelected', { 
+      detail: { id: sceneObject.id, object: sceneObject } 
+    });
+    this.container.dispatchEvent(event);
+  }
+
+  /**
+   * Deselect current object (NEW)
+   */
+  deselectObject() {
+    if (this.selectedObject) {
+      this.restoreObjectMaterials(this.selectedObject);
+      this.selectedObject = null;
+      this.selectionIndicator.visible = false;
+
+      const event = new CustomEvent('objectDeselected');
+      this.container.dispatchEvent(event);
+    }
+  }
+
+  /**
+   * Apply highlight effect to selected object (NEW)
+   */
+  highlightObject(sceneObject) {
+    sceneObject.group.traverse(child => {
+      if (child instanceof THREE.Mesh && child.material.emissive) {
+        child.material.emissive.setHex(this.config.selectionEmissive);
+      }
+    });
+  }
+
+  /**
+   * Restore original materials after deselection (NEW)
+   */
+  restoreObjectMaterials(sceneObject) {
+    sceneObject.group.traverse(child => {
+      if (child instanceof THREE.Mesh && child.material.emissive) {
+        child.material.emissive.setHex(0x000000);
+      }
+    });
+  }
+
+  /**
+   * Update selection indicator position (NEW)
+   */
+  updateSelectionIndicator() {
+    if (!this.selectedObject) {
+      this.selectionIndicator.visible = false;
+      return;
+    }
+
+    const box = new THREE.Box3().setFromObject(this.selectedObject.group);
+    const size = box.getSize(new THREE.Vector3());
+
+    this.selectionIndicator.position.set(
+      this.selectedObject.group.position.x,
+      -1.41,
+      0
+    );
+
+    const scale = Math.max(size.x, size.z) * 0.7;
+    this.selectionIndicator.scale.set(scale, scale, scale);
+    this.selectionIndicator.visible = true;
+  }
+
+  /**
+   * Update shader uniform for split-color materials to track object center position (NEW)
+   * @param {Object} sceneObject - The scene object whose shader uniforms should be updated
+   */
+  updateSplitColorShaderUniforms(sceneObject) {
+    const centerZ = sceneObject.group.position.z;
+    sceneObject.group.traverse(child => {
+      if (child instanceof THREE.Mesh &&
+          child.material instanceof THREE.ShaderMaterial &&
+          child.material.uniforms.objectCenterZ !== undefined) {
+        child.material.uniforms.objectCenterZ.value = centerZ;
+      }
+    });
+  }
+
+  /**
+   * Check if dragged object is near a snap target (NEW - Snap Feature)
+   * @param {Object} draggedObject - The scene object being dragged
+   * @returns {Object|null} - { target: sceneObject, type: 'modular-stand'|'weighted-base' } or null
+   */
+  checkSnapTargets(draggedObject) {
+    // Only MagCaseAssembled can snap to other objects
+    if (!draggedObject.objPath.toLowerCase().includes('magcaseassembled')) {
+      return null;
+    }
+
+    const draggedX = draggedObject.group.position.x;
+    let closestTarget = null;
+    let closestDistance = this.snapThreshold;
+    let targetType = null;
+
+    // Find all valid snap targets (MagCase Stand and Weighted Base)
+    this.sceneObjects.forEach(obj => {
+      if (obj === draggedObject) return; // Skip self
+
+      const isModularStand = obj.objPath.toLowerCase().includes('modular_stand');
+      const isWeightedBase = obj.objPath.toLowerCase().includes('weighted-base');
+
+      if (isModularStand || isWeightedBase) {
+        // For modular_stand, check if already occupied (only 1 magcase allowed)
+        if (isModularStand) {
+          // Check if any magcase is already snapped to this stand
+          const isOccupied = Array.from(this.assembledToSlot.entries()).some(
+            ([assembledId, slotInfo]) =>
+              slotInfo.baseId === obj.id &&
+              slotInfo.slotIndex === null &&
+              assembledId !== draggedObject.id  // Allow re-snapping the same object
+          );
+          if (isOccupied) return; // Stand already has a magcase
+        }
+
+        // For weighted-base, check if it has available slots
+        if (isWeightedBase) {
+          const slots = this.weightedBaseSlots.get(obj.id);
+          if (!slots) return; // Slots not initialized yet
+
+          const hasAvailableSlot = slots.some(slot => slot.assembledObj === null);
+          if (!hasAvailableSlot) return; // All slots occupied
+        }
+
+        const distance = Math.abs(draggedX - obj.group.position.x);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestTarget = obj;
+          targetType = isWeightedBase ? 'weighted-base' : 'modular-stand';
+        }
+      }
+    });
+
+    return closestTarget ? { target: closestTarget, type: targetType } : null;
+  }
+
+  /**
+   * Snap assembled object to target (NEW - Snap Feature)
+   * @param {Object} assembledObj - The MagCaseAssembled object to snap
+   * @param {Object} snapInfo - { target: sceneObject, type: 'modular-stand'|'weighted-base' }
+   */
+  snapToObject(assembledObj, snapInfo) {
+    const { target: targetObj, type: targetType } = snapInfo;
+
+    // Center X position over target
+    assembledObj.group.position.x = targetObj.group.position.x;
+
+    if (targetType === 'modular-stand') {
+      // Modular stand: raise slightly above shelf
+      assembledObj.group.position.y = assembledObj.baseShelfY + this.snapYOffset;
+      assembledObj.group.position.z = 0;
+
+      // Update shader uniforms for split-color materials
+      this.updateSplitColorShaderUniforms(assembledObj);
+
+      // Track relationship using same Map as weighted-base (no slotIndex needed)
+      this.assembledToSlot.set(assembledObj.id, {
+        baseId: targetObj.id,
+        slotIndex: null  // No slots for modular_stand
+      });
+
+    } else if (targetType === 'weighted-base') {
+      // Weighted-base: find first available slot
+      const slots = this.weightedBaseSlots.get(targetObj.id);
+      if (!slots) {
+        console.error('No slots found for weighted-base:', targetObj.id);
+        return;
+      }
+
+      // Find first available slot
+      const availableSlot = slots.find(slot => slot.assembledObj === null);
+      if (!availableSlot) {
+        console.warn('No available slots in weighted-base:', targetObj.id);
+        return;
+      }
+
+      // Position in the slot
+      assembledObj.group.position.y = assembledObj.baseShelfY; // Same height as shelf (inside base)
+      assembledObj.group.position.z = availableSlot.snapPointZ;
+
+      // Update shader uniforms for split-color materials
+      this.updateSplitColorShaderUniforms(assembledObj);
+
+      // Mark slot as occupied
+      availableSlot.assembledObj = assembledObj;
+
+      // Track which base and slot this object is in
+      this.assembledToSlot.set(assembledObj.id, {
+        baseId: targetObj.id,
+        slotIndex: availableSlot.slotIndex
+      });
+
+      console.log(`Snapped ${assembledObj.id} to weighted-base ${targetObj.id}, slot ${availableSlot.slotIndex}`);
+    }
+  }
+
+  /**
+   * Unsnap assembled object and return to shelf (NEW - Snap Feature)
+   * @param {Object} assembledObj - The MagCaseAssembled object to unsnap
+   */
+  unsnapObject(assembledObj) {
+    // Check if object is snapped to modular_stand or weighted-base
+    const slotInfo = this.assembledToSlot.get(assembledObj.id);
+    if (slotInfo) {
+      // Free the slot (only for weighted-base with slotIndex)
+      if (slotInfo.slotIndex !== null) {
+        const slots = this.weightedBaseSlots.get(slotInfo.baseId);
+        if (slots && slots[slotInfo.slotIndex]) {
+          slots[slotInfo.slotIndex].assembledObj = null;
+        }
+      }
+      this.assembledToSlot.delete(assembledObj.id);
+    }
+
+    // Restore original shelf Y position
+    assembledObj.group.position.y = assembledObj.baseShelfY;
+
+    // Reset Z position to center
+    assembledObj.group.position.z = 0;
+
+    // Update shader uniforms for split-color materials
+    this.updateSplitColorShaderUniforms(assembledObj);
+  }
+
+  /**
+   * Initialize slot positions for a weighted-base organizer (NEW - Multi-Slot Feature)
+   * @param {Object} weightedBaseObj - The weighted-base scene object
+   */
+  initializeWeightedBaseSlots(weightedBaseObj) {
+    if (!this.assembledDepth) {
+      console.warn('Cannot initialize weighted-base slots: MagCaseAssembled depth not yet calculated');
+      return;
+    }
+
+    const slots = [];
+    const baseZ = weightedBaseObj.group.position.z;
+    const frontEdgeZ = baseZ + (weightedBaseObj.bounds.z / 2);
+    const slotSpacing = this.assembledDepth;
+    const wallOffset = -0.075; // Offset toward the wall (negative Z)
+
+    // Create 10 slot positions from front to back
+    for (let i = 0; i < this.maxSlotsPerBase; i++) {
+      const snapPointZ = frontEdgeZ - (i * slotSpacing) - (slotSpacing / 2) + wallOffset;
+      slots.push({
+        assembledObj: null,
+        snapPointZ: snapPointZ,
+        slotIndex: i
+      });
+    }
+
+    this.weightedBaseSlots.set(weightedBaseObj.id, slots);
+    console.log(`Initialized ${this.maxSlotsPerBase} slots for weighted-base: ${weightedBaseObj.id}`);
+  }
+
+  /**
+   * Check and snap to nearest slot when dragging within a weighted-base (NEW - Multi-Slot Feature)
+   * @param {Object} assembledObj - The MagCaseAssembled object being dragged
+   * @param {number} currentZ - Current Z position of the object
+   * @returns {number} - The snapped Z position
+   */
+  checkWeightedBaseSlotSnapping(assembledObj, currentZ) {
+    const slotInfo = this.assembledToSlot.get(assembledObj.id);
+    if (!slotInfo) return currentZ; // Not in a weighted-base
+
+    const slots = this.weightedBaseSlots.get(slotInfo.baseId);
+    if (!slots) return currentZ;
+
+    // Find the closest available slot (including current slot)
+    let closestSlot = null;
+    let closestDistance = Infinity;
+
+    slots.forEach((slot) => {
+      // Allow current slot or empty slots
+      if (slot.assembledObj === null || slot.assembledObj === assembledObj) {
+        const distance = Math.abs(currentZ - slot.snapPointZ);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestSlot = slot;
+        }
+      }
+    });
+
+    if (closestSlot) {
+      // Free the old slot
+      const oldSlot = slots[slotInfo.slotIndex];
+      if (oldSlot && oldSlot.assembledObj === assembledObj) {
+        oldSlot.assembledObj = null;
+      }
+
+      // Occupy the new slot
+      closestSlot.assembledObj = assembledObj;
+
+      // Update tracking
+      this.assembledToSlot.set(assembledObj.id, {
+        baseId: slotInfo.baseId,
+        slotIndex: closestSlot.slotIndex
+      });
+
+      return closestSlot.snapPointZ;
+    }
+
+    return currentZ;
+  }
+
+  /**
+   * Move all MagCaseAssembled objects that are in a weighted-base's slots (NEW - Parent-Child Movement)
+   * @param {Object} weightedBaseObj - The weighted-base scene object being dragged
+   */
+  moveChildrenWithBase(weightedBaseObj) {
+    // Find all MagCaseAssembled objects that are in this weighted-base's slots
+    this.assembledToSlot.forEach((slotInfo, assembledId) => {
+      if (slotInfo.baseId === weightedBaseObj.id) {
+        // Find the assembled object
+        const assembledObj = this.sceneObjects.find(obj => obj.id === assembledId);
+        if (assembledObj) {
+          // Set absolute position to match weighted-base (children are centered on base)
+          // This prevents accumulation of incremental movements
+          assembledObj.group.position.x = weightedBaseObj.group.position.x;
+        }
+      }
+    });
   }
 
   /**
@@ -438,6 +1249,16 @@ class OBJViewer {
       });
     }
 
+    // Toggle shadows on scene objects (NEW)
+    this.sceneObjects.forEach(obj => {
+      obj.group.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = visible;
+          child.receiveShadow = visible;
+        }
+      });
+    });
+
     if (wasVisible !== visible) {
       if (visible) {
         this.resetRotation();
@@ -451,6 +1272,8 @@ class OBJViewer {
         // Reset camera target to center
         this.orbitalControls.target.set(0, 0, 0);
         this.updateCameraPosition();
+        // Hide selection when shelf is hidden (NEW)
+        this.deselectObject();
       }
     }
   }
@@ -714,6 +1537,374 @@ class OBJViewer {
     });
   }
 
+  // ==========================================
+  // MULTI-OBJECT SCENE MANAGEMENT (NEW)
+  // ==========================================
+
+  /**
+   * Create a split color shader material for two-tone coloring along Z axis
+   */
+  createSplitColorMaterial(colorA, colorB) {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        colorA: { value: new THREE.Color(colorA) },
+        colorB: { value: new THREE.Color(colorB) },
+        objectCenterZ: { value: 0.0 }
+      },
+      vertexShader: [
+        'varying vec3 vWorldPosition;',
+        'varying vec3 vNormal;',
+        'void main() {',
+        '  vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;',
+        '  vNormal = normalize(normalMatrix * normal);',
+        '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'uniform vec3 colorA;',
+        'uniform vec3 colorB;',
+        'uniform float objectCenterZ;',
+        'varying vec3 vWorldPosition;',
+        'varying vec3 vNormal;',
+        'void main() {',
+        '  float relativeZ = vWorldPosition.z - objectCenterZ;',
+        '  float t = relativeZ < 0.0 ? 1.0 : 0.0;',
+        '  vec3 baseColor = mix(colorA, colorB, t);',
+        '  vec3 lightDir = normalize(vec3(5.0, 5.0, 5.0));',
+        '  float diff = max(dot(vNormal, lightDir), 0.0) * 0.7;',
+        '  float lighting = 0.4 + diff;',
+        '  gl_FragColor = vec4(baseColor * lighting, 1.0);',
+        '}'
+      ].join('\n'),
+      side: THREE.DoubleSide
+    });
+  }
+
+  /**
+   * Add a new object to the scene from a product card/button (NEW)
+   * @param {string} objPath - Path to the .obj file
+   * @param {Object} options - Configuration options
+   * @param {string} options.id - Unique identifier for this object
+   * @param {number|string} options.color - Model color (hex or CSS string)
+   * @param {number|string} options.colorB - Second color for split coloring (hex or CSS string)
+   * @param {number} options.scale - Scale multiplier (default: 1)
+   * @param {number} options.positionX - Initial X position on shelf
+   * @param {Object} options.rotation - Initial rotation { x, y, z }
+   * @returns {Promise} - Resolves with the added object data
+   */
+  addObjectToScene(objPath, options = {}) {
+    return new Promise((resolve, reject) => {
+      const loader = new THREE.OBJLoader();
+      const objectId = options.id || `obj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      loader.load(
+        objPath,
+        (object) => {
+          const color = options.color 
+            ? (typeof options.color === 'string' ? parseInt(options.color.replace('#', '0x')) : options.color)
+            : this.config.modelColor;
+
+          const originalMaterials = [];
+          
+          // Check if split colors should be used (MagCaseAssembled with colorB)
+          const isMagCaseAssembled = objPath.toLowerCase().includes('magcaseassembled');
+          const useSplitColor = isMagCaseAssembled && options.colorB;
+          let splitMaterial = null;
+          
+          if (useSplitColor) {
+            const colorB = typeof options.colorB === 'string' 
+              ? parseInt(options.colorB.replace('#', '0x')) 
+              : options.colorB;
+            splitMaterial = this.createSplitColorMaterial(color, colorB);
+          }
+
+          object.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              if (useSplitColor && splitMaterial) {
+                child.material = splitMaterial;
+              } else {
+                child.material = new THREE.MeshPhongMaterial({
+                  color: color,
+                  shininess: 30,
+                  emissive: 0x000000
+                });
+              }
+              originalMaterials.push(child.material.clone());
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+
+          const box = new THREE.Box3().setFromObject(object);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+
+          object.position.sub(center);
+
+          const innerGroup = new THREE.Group();
+          innerGroup.add(object);
+
+          const baseScale = options.scale || 1;
+          if (this.config.useRealWorldScale) {
+            innerGroup.scale.multiplyScalar(0.25 * baseScale);
+          } else {
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = (2 / maxDim) * baseScale;
+            innerGroup.scale.multiplyScalar(scale);
+          }
+
+          // Apply rotation - either from options or auto-detect based on model
+          if (options.rotation) {
+            innerGroup.rotation.x = options.rotation.x || 0;
+            innerGroup.rotation.y = options.rotation.y || 0;
+            innerGroup.rotation.z = options.rotation.z || 0;
+          } else {
+            // Auto-rotate certain models that need to be tilted back 90 degrees
+            const needsRotation = objPath.toLowerCase().includes('modular_stand') || 
+                                  objPath.toLowerCase().includes('weighted-base');
+            if (needsRotation) {
+              innerGroup.rotation.x = -Math.PI / 2; // Rotate 90 degrees backward
+            }
+          }
+
+          const outerGroup = new THREE.Group();
+          outerGroup.add(innerGroup);
+
+          const scaledBox = new THREE.Box3().setFromObject(outerGroup);
+          const scaledSize = scaledBox.getSize(new THREE.Vector3());
+
+          // Calculate MagCaseAssembled depth for slot spacing (first time only)
+          if (isMagCaseAssembled && this.assembledDepth === null) {
+            this.assembledDepth = scaledSize.z;
+            // Retroactively initialize slots for any existing weighted-bases
+            this.sceneObjects.forEach(obj => {
+              if (obj.objPath.toLowerCase().includes('weighted-base')) {
+                this.initializeWeightedBaseSlots(obj);
+              }
+            });
+          }
+
+          const shelfTopY = -1.425;
+          outerGroup.position.y = shelfTopY + scaledSize.y / 2;
+
+          // Move MagCase_modular_stand objects closer to front edge of shelf
+          if (objPath.toLowerCase().includes('modular_stand')) {
+            outerGroup.position.z = 0.025;
+          }
+
+          if (typeof options.positionX === 'number') {
+            outerGroup.position.x = options.positionX;
+          } else {
+            outerGroup.position.x = this.calculateNextPosition(scaledSize.x);
+          }
+
+          const sceneObject = {
+            id: objectId,
+            group: outerGroup,
+            originalMaterials: originalMaterials,
+            bounds: scaledSize,
+            objPath: objPath,
+            color: color,
+            baseShelfY: outerGroup.position.y, // Store original shelf Y position
+            name: options.name || objectId // Store product name for modal display
+          };
+
+          this.sceneObjects.push(sceneObject);
+          this.scene.add(outerGroup);
+
+          // Initialize shader uniforms for split-color materials
+          if (useSplitColor) {
+            this.updateSplitColorShaderUniforms(sceneObject);
+          }
+
+          // Initialize weighted-base slots if this is a weighted-base and depth is known
+          const isWeightedBase = objPath.toLowerCase().includes('weighted-base');
+          if (isWeightedBase && this.assembledDepth !== null) {
+            this.initializeWeightedBaseSlots(sceneObject);
+          }
+
+          const event = new CustomEvent('objectAdded', {
+            detail: { id: objectId, object: sceneObject }
+          });
+          this.container.dispatchEvent(event);
+
+          resolve(sceneObject);
+        },
+        null,
+        reject
+      );
+    });
+  }
+
+  /**
+   * Calculate the next available X position for a new object (NEW)
+   */
+  calculateNextPosition(objectWidth) {
+    if (this.sceneObjects.length === 0) {
+      return 0;
+    }
+
+    let rightmostEdge = -Infinity;
+    this.sceneObjects.forEach(obj => {
+      const rightEdge = obj.group.position.x + obj.bounds.x / 2;
+      if (rightEdge > rightmostEdge) {
+        rightmostEdge = rightEdge;
+      }
+    });
+
+    const padding = 0.3;
+    const newX = rightmostEdge + padding + objectWidth / 2;
+
+    const halfShelf = this.config.shelfWidth / 2;
+    return Math.min(newX, halfShelf - objectWidth / 2);
+  }
+
+  /**
+   * Remove an object from the scene by ID (NEW)
+   */
+  removeObjectFromScene(objectId) {
+    const index = this.sceneObjects.findIndex(obj => obj.id === objectId);
+    if (index === -1) return false;
+
+    const obj = this.sceneObjects[index];
+
+    if (this.selectedObject === obj) {
+      this.deselectObject();
+    }
+
+    // Handle weighted-base removal (NEW - Multi-Slot Feature)
+    const isWeightedBase = obj.objPath.toLowerCase().includes('weighted-base');
+    if (isWeightedBase) {
+      // Unsnap all MagCaseAssembled objects in this weighted-base's slots
+      const slots = this.weightedBaseSlots.get(obj.id);
+      if (slots) {
+        slots.forEach(slot => {
+          if (slot.assembledObj) {
+            this.unsnapObject(slot.assembledObj);
+          }
+        });
+        // Remove weighted-base from slots map
+        this.weightedBaseSlots.delete(obj.id);
+      }
+    }
+
+    // Handle MagCaseAssembled removal - free its slot if in weighted-base
+    const slotInfo = this.assembledToSlot.get(obj.id);
+    if (slotInfo) {
+      const slots = this.weightedBaseSlots.get(slotInfo.baseId);
+      if (slots && slots[slotInfo.slotIndex]) {
+        slots[slotInfo.slotIndex].assembledObj = null;
+      }
+      this.assembledToSlot.delete(obj.id);
+    }
+
+    this.scene.remove(obj.group);
+
+    obj.group.traverse(child => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        child.material.dispose();
+      }
+    });
+
+    this.sceneObjects.splice(index, 1);
+
+    const event = new CustomEvent('objectRemoved', { detail: { id: objectId } });
+    this.container.dispatchEvent(event);
+
+    return true;
+  }
+
+  /**
+   * Clear all objects from the scene (NEW)
+   */
+  clearAllObjects() {
+    this.deselectObject();
+
+    this.sceneObjects.forEach(obj => {
+      this.scene.remove(obj.group);
+      obj.group.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          child.material.dispose();
+        }
+      });
+    });
+
+    this.sceneObjects = [];
+
+    const event = new CustomEvent('allObjectsCleared');
+    this.container.dispatchEvent(event);
+  }
+
+  /**
+   * Get all scene objects (NEW)
+   */
+  getSceneObjects() {
+    return this.sceneObjects.map(obj => ({
+      id: obj.id,
+      position: { x: obj.group.position.x, y: obj.group.position.y, z: obj.group.position.z },
+      bounds: { x: obj.bounds.x, y: obj.bounds.y, z: obj.bounds.z },
+      objPath: obj.objPath,
+      color: obj.color
+    }));
+  }
+
+  /**
+   * Move selected object to a specific X position (NEW)
+   */
+  moveSelectedObjectTo(x) {
+    if (!this.selectedObject) return;
+
+    const halfShelf = this.config.shelfWidth / 2;
+    const objectHalfWidth = this.selectedObject.bounds.x / 2;
+    const clampedX = Math.max(-halfShelf + objectHalfWidth, Math.min(halfShelf - objectHalfWidth, x));
+
+    this.selectedObject.group.position.x = clampedX;
+    this.updateSelectionIndicator();
+  }
+
+  /**
+   * Auto-arrange all objects evenly on shelf (NEW)
+   */
+  autoArrangeObjects() {
+    if (this.sceneObjects.length === 0) return;
+
+    let totalWidth = 0;
+    this.sceneObjects.forEach(obj => {
+      totalWidth += obj.bounds.x;
+    });
+
+    const availableWidth = this.config.shelfWidth;
+    const spacing = (availableWidth - totalWidth) / (this.sceneObjects.length + 1);
+
+    let currentX = -availableWidth / 2;
+    this.sceneObjects.forEach(obj => {
+      currentX += spacing + obj.bounds.x / 2;
+      obj.group.position.x = currentX;
+      currentX += obj.bounds.x / 2;
+    });
+
+    this.updateSelectionIndicator();
+  }
+
+  /**
+   * Change color of a specific scene object (NEW)
+   */
+  setSceneObjectColor(objectId, color) {
+    const obj = this.sceneObjects.find(o => o.id === objectId);
+    if (!obj) return;
+
+    const hexColor = typeof color === 'string' ? parseInt(color.replace('#', '0x')) : color;
+    obj.color = hexColor;
+
+    obj.group.traverse(child => {
+      if (child instanceof THREE.Mesh) {
+        child.material.color.setHex(hexColor);
+      }
+    });
+  }
+
   /**
    * Animation loop
    */
@@ -816,6 +2007,9 @@ class OBJViewer {
       });
     }
 
+    // Clean up scene objects (NEW)
+    this.clearAllObjects();
+
     if (this.shelf) {
       this.scene.remove(this.shelf);
       this.shelf.traverse((child) => {
@@ -824,6 +2018,13 @@ class OBJViewer {
           child.material.dispose();
         }
       });
+    }
+
+    // Clean up selection indicator (NEW)
+    if (this.selectionIndicator) {
+      this.scene.remove(this.selectionIndicator);
+      this.selectionIndicator.geometry.dispose();
+      this.selectionIndicator.material.dispose();
     }
     
     this.renderer.dispose();
