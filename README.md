@@ -17,7 +17,6 @@ MagCase by DesignedByBud offers premium magnetic card cases designed for collect
 demo/
 ├── index.html                      # Main landing page
 ├── shelf-builder.html              # Interactive shelf builder tool
-├── blog.html                       # Blog page
 ├── landing-page.css                # Landing page styles
 ├── product-card.css                # Product card component styles
 ├── product-viewer.css              # 3D viewer styles
