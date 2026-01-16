@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MagCase - Interactive 3D Viewer | DesignedByBud</title>
+    <meta name="description" content="Explore the MagCase in full interactive 3D. Customize colors, view on shelf display, and examine every detail.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Shared Product Viewer Styles -->
+    <link rel="stylesheet" href="product-viewer.css">
+
+    <style>
+        /* Product-specific styles for color button grid */
+        .color-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .color-btn {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 10px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-btn.active {
+            border-color: #212529;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #212529;
+        }
+
+        .color-btn.disabled {
+            opacity: 0.4;
+            filter: grayscale(60%);
+            cursor: not-allowed;
+        }
+
+        .color-btn.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Info Button */
+        .info-button {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #2563eb;
+            color: #2563eb;
+            font-size: 18px;
+            font-weight: 700;
+            font-family: 'Georgia', serif;
+            font-style: italic;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 5;
+        }
+
+        .info-button:hover {
+            background: #2563eb;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .info-button:active {
+            transform: scale(1.05);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Modal Content */
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 20px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .modal-content p {
+            font-size: 15px;
+            color: #495057;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .modal-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-content strong {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .info-button {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+                top: 12px;
+                right: 12px;
+            }
+
+            .modal-content {
+                padding: 24px;
+                max-width: 400px;
+            }
+
+            .modal-content h2 {
+                font-size: 20px;
+            }
+
+            .modal-content p {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <a href="index.html" class="back-btn">
+                <span>←</span>
+                <span>Back to Gallery</span>
+            </a>
+            <h1 class="product-title-header">MagCase - 3D Viewer</h1>
+            <a href="https://designedbybud.etsy.com/listing/4387107464/modular-magcase-for-toploader-cards" target="_blank" rel="noopener noreferrer" class="etsy-link">
+                <span>🛒</span>
+                <span>Shop on Etsy</span>
+            </a>
+        </div>
+
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Viewer Section -->
+            <div class="viewer-section">
+                <div class="viewer-container" id="product-viewer">
+                    <div class="loading-indicator" id="loading-indicator">Loading 3D Model...</div>
+                    <button class="info-button" id="info-button" aria-label="Viewer Tips">i</button>
+                </div>
+
+                <div class="viewer-controls">
+                    <!-- Display Controls -->
+                    <div class="control-group">
+                        <h3>Display Options</h3>
+                        <div class="control-row">
+                            <span class="control-label">Show Shelf</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="shelf-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="control-row">
+                            <span class="control-label">Assembled View</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="assembled-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="control-row" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+                            <span class="control-label">Model Color</span>
+                            <div class="color-buttons">
+                                <button class="color-btn" data-color="#2c2c2c" data-etsy-url="https://designedbybud.etsy.com/listing/4387107464/modular-magcase-for-toploader-cards" style="background-color: #2c2c2c;" title="Black"></button>
+                                <button class="color-btn" data-color="#800020" data-etsy-url="https://designedbybud.etsy.com/listing/4372328094/modular-magcase-for-toploader-cards" style="background-color: #800020;" title="Burgundy"></button>
+                                <button class="color-btn active" data-color="#4a90e2" data-etsy-url="https://designedbybud.etsy.com/listing/4354566340/modular-magcase-for-toploader-cards-blue" style="background-color: #4a90e2;" title="Blue"></button>
+                                <button class="color-btn" data-color="#cdf2ff" data-etsy-url="https://designedbybud.etsy.com/listing/4419921349/modular-magcase-for-toploader-cards" style="background-color: #cdf2ff;" title="Light Blue"></button>
+                                <button class="color-btn" data-color="#5f8d4e" data-etsy-url="https://designedbybud.etsy.com/listing/4387118273/modular-magcase-for-toploader-cards-leaf" style="background-color: #5f8d4e;" title="Leaf Green"></button>
+                                <button class="color-btn" data-color="#ff8c42" data-etsy-url="https://designedbybud.etsy.com/listing/4354444659/modular-magcase-for-toploader-cards" style="background-color: #ff8c42;" title="Orange"></button>
+                                <button class="color-btn" data-color="#c19a6b" data-etsy-url="https://designedbybud.etsy.com/listing/4419929910/modular-magcase-for-toploader-cards" style="background-color: #c19a6b;" title="Light Brown"></button>
+                                <button class="color-btn disabled" data-color="#9b59b6" style="background-color: #9b59b6;" title="Purple (Sold out)" disabled></button>
+                                <button class="color-btn disabled" data-color="#ffb6c1" style="background-color: #ffb6c1;" title="Light Pink (Sold out)" disabled></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="reset-view">Reset View</button>
+                        <button class="btn btn-secondary" id="reset-all">Reset All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="info-card">
+                    <h2>About MagCase</h2>
+                    <p>Sleek magnetic card case designed for secure storage and easy access to your valuable trading cards.</p>
+                    <ul>
+                        <li>Magnetic frames that convert toploader cards into shelf-ready displays</li>
+                        <li>No permanent commitment—reorganize your display anytime</li>
+                        <li>Customizable color combinations</li>
+                        <li>Purpose-built for displaying ungraded cards beyond basic storage </li>
+                        <li>Create customizable shelf displays that evolve with your collection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal-overlay" id="info-modal">
+        <div class="modal-content">
+            <h2>Viewer Tips</h2>
+            <p><strong>Rotate:</strong> Click and drag to rotate the model</p>
+            <p><strong>Auto-Rotate:</strong> Enable automatic rotation</p>
+            <p><strong>Shelf Display:</strong> See how it looks on a shelf</p>
+            <p><strong>Assembled View:</strong> Toggle between individual and assembled model</p>
+            <p><strong>Model Color:</strong> Customize the product color</p>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+
+    <!-- OBJ Viewer -->
+    <script src="obj-viewer.js"></script>
+
+    <!-- Product Page Script -->
+    <script>
+        // Initialize viewer
+        let viewer;
+        let currentModel = 'products/MagCase.obj';
+
+        /**
+         * Wait for Three.js dependencies to load
+         * This prevents race conditions where DOMContentLoaded fires before CDN scripts finish loading
+         */
+        function waitForDependencies(timeout = 10000) {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+
+                function check() {
+                    // Check if all required Three.js components are loaded
+                    if (typeof THREE !== 'undefined' &&
+                        typeof THREE.OBJLoader !== 'undefined' &&
+                        typeof THREE.MTLLoader !== 'undefined') {
+                        console.log('All Three.js dependencies loaded successfully');
+                        resolve();
+                    } else {
+                        // Check if we've exceeded timeout
+                        if (Date.now() - startTime > timeout) {
+                            reject(new Error('Timeout waiting for Three.js dependencies to load'));
+                        } else {
+                            // Check again in 50ms
+                            setTimeout(check, 50);
+                        }
+                    }
+                }
+
+                check();
+            });
+        }
+
+        /**
+         * Initialize the 3D viewer
+         */
+        function initializeViewer() {
+            // Create viewer instance
+            viewer = new OBJViewer('product-viewer', {
+                backgroundColor: 0xf5f0e8,
+                modelColor: 0x4a90e2,
+                enableRotation: true,
+                autoRotate: false,
+                autoRotateSpeed: 0.3,
+                autoRotateAxis: 'y',
+                initialRotation: { x: 0, y: 0, z: 0 },
+                shelfVisible: false,
+                shelfColor: 0x8B4513,
+                useRealWorldScale: true
+            });
+
+            // Load the model
+            viewer.loadOBJ('products/MagCase.obj')
+                .then(() => {
+                    document.getElementById('loading-indicator').style.display = 'none';
+                    console.log('Model loaded successfully');
+                })
+                .catch(error => {
+                    console.error('Error loading model:', error);
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    loadingIndicator.textContent = 'Failed to load model. Please refresh the page.';
+                    loadingIndicator.style.background = 'rgba(255, 235, 235, 0.95)';
+                    loadingIndicator.style.color = '#d32f2f';
+                });
+
+            // Setup controls
+            setupControls();
+        }
+
+        // Wait for DOM to be ready, then wait for dependencies, then initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForDependencies()
+                .then(() => {
+                    initializeViewer();
+                })
+                .catch(error => {
+                    console.error('Failed to load dependencies:', error);
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    loadingIndicator.textContent = 'Failed to load 3D viewer libraries. Please refresh the page.';
+                    loadingIndicator.style.background = 'rgba(255, 235, 235, 0.95)';
+                    loadingIndicator.style.color = '#d32f2f';
+                });
+        });
+
+        function setupControls() {
+            // Shelf toggle
+            document.getElementById('shelf-toggle').addEventListener('change', (e) => {
+                viewer.setShelfVisible(e.target.checked);
+            });
+
+            // Assembled view toggle
+            document.getElementById('assembled-toggle').addEventListener('change', (e) => {
+                // Save current state
+                const savedRotationX = viewer.model ? viewer.model.rotation.x : 0;
+                const savedRotationY = viewer.model ? viewer.model.rotation.y : 0;
+                const savedRotationZ = viewer.model ? viewer.model.rotation.z : 0;
+                const savedColor = viewer.config.modelColor;
+
+                // Switch model path
+                currentModel = e.target.checked ? 'products/MagCaseAssembled.obj' : 'products/MagCase.obj';
+
+                // Load new model and restore state
+                viewer.loadOBJ(currentModel).then(() => {
+                    viewer.model.rotation.set(savedRotationX, savedRotationY, savedRotationZ);
+                    viewer.setModelColor('#' + savedColor.toString(16).padStart(6, '0'));
+                });
+            });
+
+            // Model color buttons
+            document.querySelectorAll('.color-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Skip disabled buttons
+                    if (e.target.classList.contains('disabled')) {
+                        return;
+                    }
+
+                    const color = e.target.getAttribute('data-color');
+                    const etsyUrl = e.target.getAttribute('data-etsy-url');
+
+                    viewer.setModelColor(color);
+
+                    // Update Etsy link if URL is provided
+                    if (etsyUrl) {
+                        const etsyLink = document.querySelector('.etsy-link');
+                        if (etsyLink) {
+                            etsyLink.href = etsyUrl;
+                        }
+                    }
+
+                    // Update active state
+                    document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            // Reset view button
+            document.getElementById('reset-view').addEventListener('click', () => {
+                viewer.resetRotation();
+            });
+
+            // Reset all button
+            document.getElementById('reset-all').addEventListener('click', () => {
+                // Reset rotation
+                viewer.resetRotation();
+
+                // Reset shelf
+                viewer.setShelfVisible(false);
+                document.getElementById('shelf-toggle').checked = false;
+
+                // Reset assembled view
+                if (document.getElementById('assembled-toggle').checked) {
+                    currentModel = 'products/MagCase.obj';
+                    viewer.loadOBJ(currentModel).then(() => {
+                        viewer.setModelColor('#4a90e2');
+                    });
+                }
+                document.getElementById('assembled-toggle').checked = false;
+
+                // Reset colors
+                viewer.setModelColor('#4a90e2');
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-color') === '#4a90e2') {
+                        btn.classList.add('active');
+                    }
+                });
+
+                // Reset Etsy link to default blue color
+                const etsyLink = document.querySelector('.etsy-link');
+                if (etsyLink) {
+                    etsyLink.href = 'https://designedbybud.etsy.com/listing/4354566340/modular-magcase-for-toploader-cards-blue';
+                }
+            });
+        }
+
+        // Info Modal Functionality
+        const infoButton = document.getElementById('info-button');
+        const infoModal = document.getElementById('info-modal');
+        const modalContent = document.querySelector('.modal-content');
+
+        // Show modal when info button is clicked
+        infoButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            infoModal.classList.add('show');
+        });
+
+        // Hide modal when clicking outside the modal content
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                infoModal.classList.remove('show');
+            }
+        });
+
+        // Prevent clicks inside modal content from closing the modal
+        modalContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Also support touch events for mobile
+        infoModal.addEventListener('touchend', (e) => {
+            if (e.target === infoModal) {
+                infoModal.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>
