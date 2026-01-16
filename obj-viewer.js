@@ -509,6 +509,9 @@ class OBJViewer {
     // Touch support - prevents page scrolling while rotating
     let touchStartPos = { x: 0, y: 0 };
     let touchStartTime = 0;
+    let twoFingerPanning = false;
+    let twoFingerStartMidpoint = { x: 0, y: 0 };
+    let cameraTargetStartX = 0;
 
     const onTouchStart = (e) => {
       if (e.touches.length === 1) {
@@ -542,10 +545,48 @@ class OBJViewer {
         // This prevents camera snap/jump when starting a new drag
         this.controls.previousMousePosition = touchStartPos;
         this.controls.isDragging = true;
+      } else if (e.touches.length === 2) {
+        // Two-finger pan mode
+        e.preventDefault();
+        twoFingerPanning = true;
+
+        // Calculate midpoint between two fingers
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        twoFingerStartMidpoint = { x: midX, y: midY };
+
+        // Store starting camera target X position
+        cameraTargetStartX = this.orbitalControls.target.x;
+
+        // Stop single-finger actions
+        this.controls.isDragging = false;
+        this.isDraggingObject = false;
       }
     };
 
     const onTouchMove = (e) => {
+      // Handle two-finger panning
+      if (twoFingerPanning && e.touches.length === 2) {
+        e.preventDefault();
+
+        // Calculate current midpoint
+        const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+
+        // Calculate horizontal movement
+        const deltaX = midX - twoFingerStartMidpoint.x;
+
+        // Pan sensitivity - negative to invert direction (pan left = camera moves right)
+        const panSensitivity = -0.01;
+        const newTargetX = cameraTargetStartX + deltaX * panSensitivity;
+
+        // Clamp camera target to reasonable bounds (±8 units to cover 20-unit shelf)
+        this.orbitalControls.target.x = Math.max(-8, Math.min(8, newTargetX));
+
+        // Update camera position based on new target
+        this.updateCameraPosition();
+        return;
+      }
+
       if (this.controls.isDragging && e.touches.length === 1) {
         e.preventDefault(); // Prevent page scroll
         const touch = e.touches[0];
@@ -645,6 +686,11 @@ class OBJViewer {
     };
 
     const onTouchEnd = (e) => {
+      // Reset two-finger panning when fingers are lifted
+      if (e.touches.length < 2) {
+        twoFingerPanning = false;
+      }
+
       const timeDiff = Date.now() - touchStartTime;
 
       // If it was a quick tap, treat as selection or double-tap (NEW)
