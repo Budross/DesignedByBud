@@ -624,7 +624,7 @@
                     <!-- Stacked Products Container -->
                     <div class="stacked-products">
                         <!-- Product Card: MagCase Stand -->
-                        <div class="product-card" data-obj="../products/MagCase%20Modular%20Stand.obj" data-name="MagCase Stand" data-color="#2c2c2c">
+                        <div class="product-card" data-obj="../products/MagCase%20Modular%20Stand.obj" data-name="MagCase Stand" data-color="#2c2c2c" data-rotation-x="-1.5708">
                             <div class="name">MagCase Stand</div>
                             <div class="description">Modular display stand with magnetic sides</div>
                         </div>
@@ -944,6 +944,15 @@
             const addOptions = { id: objectId, color: color, name: name };
             if (colorB) {
                 addOptions.colorB = colorB;
+            }
+
+            // Check for rotation data attributes
+            if (card.dataset.rotationX || card.dataset.rotationY || card.dataset.rotationZ) {
+                addOptions.rotation = {
+                    x: card.dataset.rotationX ? parseFloat(card.dataset.rotationX) : 0,
+                    y: card.dataset.rotationY ? parseFloat(card.dataset.rotationY) : 0,
+                    z: card.dataset.rotationZ ? parseFloat(card.dataset.rotationZ) : 0
+                };
             }
 
             viewer.addObjectToScene(objPath, addOptions).then((obj) => {
