@@ -115,21 +115,16 @@
     <link rel="stylesheet" href="landing-page.css?v=1.0.2">
 
     <script>
-        // Flag to track when deferred CSS is loaded
         window.deferredCSSLoaded = false;
         window.deferredCSSCallbacks = [];
 
-        // Load product-card.css asynchronously after FCP
         function loadDeferredStyles() {
             var link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = 'product-card.css?v=1.0.2';
 
-            // Always wait for onload callback to ensure CSS is fully parsed and applied
-            // Even on reload from cache, we need to wait for browser to apply styles
             link.onload = function() {
                 window.deferredCSSLoaded = true;
-                // Execute any callbacks waiting for CSS to load
                 window.deferredCSSCallbacks.forEach(function(callback) {
                     callback();
                 });
@@ -139,7 +134,6 @@
             document.head.appendChild(link);
         }
 
-        // Helper function for scripts to wait for deferred CSS
         window.waitForDeferredCSS = function(callback) {
             if (window.deferredCSSLoaded) {
                 callback();
@@ -148,13 +142,11 @@
             }
         };
 
-        // Use requestAnimationFrame to defer until after paint
         if (window.requestAnimationFrame) {
             requestAnimationFrame(function() {
                 setTimeout(loadDeferredStyles, 0);
             });
         } else {
-            // Fallback for older browsers
             window.addEventListener('load', loadDeferredStyles);
         }
     </script>
@@ -164,7 +156,40 @@
     </noscript>
 
     <style>
-        /* Newsletter Section */
+        .skip-to-content {
+            position: absolute;
+            top: -100%;
+            left: 16px;
+            background: var(--primary-color, #2563eb);
+            color: #ffffff;
+            padding: 12px 24px;
+            z-index: 10000;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            text-decoration: none;
+            border-radius: 0 0 8px 8px;
+            transition: top 0.2s ease;
+        }
+
+        .skip-to-content:focus {
+            top: 0;
+            outline: 3px solid var(--secondary-color, #f59e0b);
+            outline-offset: 2px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         .newsletter-section {
             background: linear-gradient(135deg, #fef7f0 0%, #f5f0e8 50%, #fce4d0 100%);
             padding: 60px 20px;
@@ -214,7 +239,7 @@
         .newsletter-form input[type="email"]:focus {
             outline: none;
             border-color: var(--secondary-color, #f59e0b);
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3);
         }
 
         .newsletter-form button[type="submit"] {
@@ -239,6 +264,12 @@
 
         .newsletter-form button[type="submit"]:active {
             transform: translateY(0);
+        }
+
+        .newsletter-status {
+            margin-top: 12px;
+            font-size: 14px;
+            min-height: 1.5em;
         }
 
         @media (max-width: 768px) {
@@ -266,15 +297,17 @@
     </style>
 </head>
 <body>
-    <header class="hero">
-        <div class="site-header">
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+
+    <header class="hero" role="banner">
+        <nav class="site-header" aria-label="Site">
             <div class="site-header-brand">
-                <img src="graphics/DBB_LOGO.webp" alt="DesignedByBud Logo - Magnetic Card Case Creator" class="site-header-logo">
+                <img src="graphics/DBB_LOGO.webp" alt="DesignedByBud Logo" class="site-header-logo">
                 <span class="site-header-text">Designed By Bud</span>
             </div>
-        </div>
+        </nav>
         <div class="hero-banner-container">
-            <img src="graphics/WebsiteBanner.webp" alt="DesignedByBud MagCase - Premium Magnetic Card Cases and Card Holders" class="hero-banner">
+            <img src="graphics/WebsiteBanner.webp" alt="" role="presentation" class="hero-banner">
         </div>
         <div class="hero-content">
             <h1 class="hero-description">
@@ -283,7 +316,8 @@
             <div class="hero-cta">
                 <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="cta-button primary">
                     <span class="cta-text">Visit Our Etsy Store</span>
-                    <svg class="cta-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <span class="sr-only">(opens in new tab)</span>
+                    <svg class="cta-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M4.16699 10H15.8337" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M10 4.16699L15.8333 10.0003L10 15.8337" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -294,9 +328,11 @@
         </div>
     </header>
 
-    <section class="products-section" id="products">
+    <main id="main-content">
+
+    <section class="products-section" id="products" aria-labelledby="products-title">
         <div class="section-header">
-            <h1 class="section-title">MagCase Series</h1>
+            <h2 class="section-title" id="products-title">MagCase Series</h2>
             <p class="section-subtitle">Magnetic card cases designed for collectors who want easy access without the commitment of grading.</p>
 
             <div class="magcase-description">
@@ -306,7 +342,7 @@
                         <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
-                <div class="why-magcase-panel" id="why-magcase-content">
+                <div class="why-magcase-panel" id="why-magcase-content" role="region" aria-label="Why MagCase details" hidden>
                     <div class="description-content">
                         <div class="description-section">
                             <h3>The Problem with Existing Solutions</h3>
@@ -330,123 +366,121 @@
             <p class="section-subtitle interactive-hint">Explore our collection in interactive 3D - drag to rotate any product</p>
         </div>
 
-        <div class="product-grid">
+        <div class="product-grid" role="list" aria-label="Products">
 
-            <div class="product-card button-shinyCard">
-                <div class="viewer-3d" id="viewer-magcase">
-                    <div class="loading-indicator" id="loading-magcase">Loading 3D Model...</div>
+            <div class="product-card button-shinyCard" role="listitem">
+                <div class="viewer-3d" id="viewer-magcase" role="img" aria-label="Interactive 3D model of MagCase. Use mouse drag or touch to rotate.">
+                    <div class="loading-indicator" id="loading-magcase" role="status" aria-live="polite">Loading 3D Model...</div>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">MagCase</h3><br>
                     <p class="product-description">Sleek magnetic card case designed for secure storage and easy access to your valuable trading cards.</p>
                     <div class="product-links">
                         <a href="MagCase/" class="view-3d-link">
-                            View in 3D
+                            View in 3D<span class="sr-only">: MagCase</span>
                         </a>
                         <a href="https://designedbybud.etsy.com/listing/4387107464/modular-magcase-for-toploader-cards" target="_blank" rel="noopener noreferrer" class="product-link">
-                            View on Etsy
+                            View on Etsy<span class="sr-only">: MagCase (opens in new tab)</span>
                         </a>
                     </div>
                 </div>
                 <div class="card-controls">
                     <label>
                         <input type="checkbox" class="auto-rotate" data-viewer="magcase">
-                        Auto-rotate
+                        Auto-rotate<span class="sr-only"> MagCase 3D model</span>
                     </label>
                     <span class="spacer"></span>
-                    <button class="reset-btn" data-viewer="magcase">Reset View</button>
+                    <button class="reset-btn" data-viewer="magcase">Reset View<span class="sr-only"> for MagCase</span></button>
                 </div>
             </div>
 
-            <div class="product-card">
-                <div class="viewer-3d" id="viewer-weighted-magcase">
-                    <div class="loading-indicator" id="loading-weighted-magcase">Loading 3D Model...</div>
+            <div class="product-card" role="listitem">
+                <div class="viewer-3d" id="viewer-weighted-magcase" role="img" aria-label="Interactive 3D model of Weighted-Base MagCase Organizer. Use mouse drag or touch to rotate.">
+                    <div class="loading-indicator" id="loading-weighted-magcase" role="status" aria-live="polite">Loading 3D Model...</div>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">Weighted-Base MagCase Organizer</h3>
                     <p class="product-description">Premium organizer with weighted base for stability. Perfect for displaying and organizing your MagCase collection.</p>
                     <div class="product-links">
                         <a href="MagCase%20Organizer/" class="view-3d-link">
-                            View in 3D
+                            View in 3D<span class="sr-only">: Weighted-Base MagCase Organizer</span>
                         </a>
                         <a href="https://designedbybud.etsy.com/listing/4372334258/weighted-base-magcase-organizer" target="_blank" rel="noopener noreferrer" class="product-link">
-                            View on Etsy
+                            View on Etsy<span class="sr-only">: Weighted-Base MagCase Organizer (opens in new tab)</span>
                         </a>
                     </div>
                 </div>
                 <div class="card-controls">
                     <label>
                         <input type="checkbox" class="auto-rotate" data-viewer="weighted-magcase">
-                        Auto-rotate
+                        Auto-rotate<span class="sr-only"> Weighted-Base MagCase Organizer 3D model</span>
                     </label>
                     <span class="spacer"></span>
-                    <button class="reset-btn" data-viewer="weighted-magcase">Reset View</button>
+                    <button class="reset-btn" data-viewer="weighted-magcase">Reset View<span class="sr-only"> for Weighted-Base MagCase Organizer</span></button>
                 </div>
             </div>
 
-            <div class="product-card">
-                <div class="viewer-3d" id="viewer-weighted-50card">
-                    <div class="loading-indicator" id="loading-weighted-50card">Loading 3D Model...</div>
+            <div class="product-card" role="listitem">
+                <div class="viewer-3d" id="viewer-weighted-50card" role="img" aria-label="Interactive 3D model of Weighted-Base 50-Card Organizer. Use mouse drag or touch to rotate.">
+                    <div class="loading-indicator" id="loading-weighted-50card" role="status" aria-live="polite">Loading 3D Model...</div>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">Weighted-Base 50-Card Organizer</h3>
                     <p class="product-description">Heavy-duty organizer with capacity for up to 50 top-loader cards.</p>
                     <div class="product-links">
                         <a href="Toploader%20Organizer/" class="view-3d-link">
-                            View in 3D
+                            View in 3D<span class="sr-only">: Weighted-Base 50-Card Organizer</span>
                         </a>
                         <a href="https://designedbybud.etsy.com/listing/4355076765/weighted-base-50-card-organizer" target="_blank" rel="noopener noreferrer" class="product-link">
-                            View on Etsy
+                            View on Etsy<span class="sr-only">: Weighted-Base 50-Card Organizer (opens in new tab)</span>
                         </a>
                     </div>
                 </div>
                 <div class="card-controls">
                     <label>
                         <input type="checkbox" class="auto-rotate" data-viewer="weighted-50card">
-                        Auto-rotate
+                        Auto-rotate<span class="sr-only"> Weighted-Base 50-Card Organizer 3D model</span>
                     </label>
                     <span class="spacer"></span>
-                    <button class="reset-btn" data-viewer="weighted-50card">Reset View</button>
+                    <button class="reset-btn" data-viewer="weighted-50card">Reset View<span class="sr-only"> for Weighted-Base 50-Card Organizer</span></button>
                 </div>
             </div>
 
-            <div class="product-card button-shinyCard">
-                <div class="viewer-3d" id="viewer-modular-stand">
-                    <div class="loading-indicator" id="loading-modular-stand">Loading 3D Model...</div>
+            <div class="product-card button-shinyCard" role="listitem">
+                <div class="viewer-3d" id="viewer-modular-stand" role="img" aria-label="Interactive 3D model of MagCase Modular Stand. Use mouse drag or touch to rotate.">
+                    <div class="loading-indicator" id="loading-modular-stand" role="status" aria-live="polite">Loading 3D Model...</div>
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">MagCase Modular Stand</h3><br>
                     <p class="product-description">Modular stand system for MagCase card display. Snap multiple stands together side-by-side with built-in magnets!</p>
                     <div class="product-links">
                         <a href="Modular-Stand/" class="view-3d-link">
-                            View in 3D
+                            View in 3D<span class="sr-only">: MagCase Modular Stand</span>
                         </a>
                         <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer" class="product-link">
-                            View on Etsy
+                            View on Etsy<span class="sr-only">: MagCase Modular Stand (opens in new tab)</span>
                         </a>
                     </div>
                 </div>
                 <div class="card-controls">
                     <label>
                         <input type="checkbox" class="auto-rotate" data-viewer="modular-stand">
-                        Auto-rotate
+                        Auto-rotate<span class="sr-only"> MagCase Modular Stand 3D model</span>
                     </label>
                     <span class="spacer"></span>
-                    <button class="reset-btn" data-viewer="modular-stand">Reset View</button>
+                    <button class="reset-btn" data-viewer="modular-stand">Reset View<span class="sr-only"> for MagCase Modular Stand</span></button>
                 </div>
             </div>
 
         </div>
     </section>
 
-    <section class="reviews-section">
+    <section class="reviews-section" aria-labelledby="reviews-title">
         <div class="reviews-content">
-            <h2 class="reviews-title">What Our Customers Say</h2>
+            <h2 class="reviews-title" id="reviews-title">What Our Customers Say</h2>
 
-            
-            
             <div class="reviews-summary">
-                <div class="star-rating-large">
+                <div class="star-rating-large" role="img" aria-label="5 out of 5 stars">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                     </svg>
@@ -467,212 +501,208 @@
             </div>
 
             <div class="reviews-grid">
-                <div class="review-card">
+                <article class="review-card" aria-label="Review by Jack, 5 out of 5 stars">
                     <div class="review-header">
-                        <div class="review-stars">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Jack</span>
-                            <span class="review-date">Jan 20, 2026</span>
+                            <time class="review-date" datetime="2026-01-20">Jan 20, 2026</time>
                         </div>
                     </div>
                     <p class="review-text">Case came super quick and Bud left a very kind note.</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
             
-            <div class="review-card">
-                <div class="review-header">
-                    <div class="review-stars">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
-                        </svg>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
-                        </svg>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
-                        </svg>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
-                        </svg>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
-                        </svg>
+                <article class="review-card" aria-label="Review by Colten, 5 out of 5 stars">
+                    <div class="review-header">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
+                            </svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
+                            </svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
+                            </svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
+                            </svg>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
+                            </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Colten</span>
-                            <span class="review-date">Jan 15, 2026</span>
+                            <time class="review-date" datetime="2026-01-15">Jan 15, 2026</time>
                         </div>
                     </div>
                     <p class="review-text">Seller was incredibly kind to update order that I made a mistake on at no extra charge</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
            
-                <div class="review-card">
+                <article class="review-card" aria-label="Review by Elissa, 5 out of 5 stars">
                     <div class="review-header">
-                        <div class="review-stars">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Elissa</span>
-                            <span class="review-date">Dec 24, 2025</span>
+                            <time class="review-date" datetime="2025-12-24">Dec 24, 2025</time>
                         </div>
                     </div>
                     <p class="review-text">Bud wrote the sweetest note and I am so happy with my purchase!</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
 
-                <div class="review-card">
+                <article class="review-card" aria-label="Review by Angie, 5 out of 5 stars">
                     <div class="review-header">
-                        <div class="review-stars">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Angie</span>
-                            <span class="review-date">Dec 13, 2025</span>
+                            <time class="review-date" datetime="2025-12-13">Dec 13, 2025</time>
                         </div>
                     </div>
                     <p class="review-text">It's exactly what I was looking for! They keep my cards safe and I'm able to display them on my desk. Love how there were different color options as well!</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
 
-                <div class="review-card">
+                <article class="review-card" aria-label="Review by Katie, 5 out of 5 stars">
                     <div class="review-header">
-                        <div class="review-stars">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Katie</span>
-                            <span class="review-date">Nov 21, 2025</span>
+                            <time class="review-date" datetime="2025-11-21">Nov 21, 2025</time>
                         </div>
                     </div>
                     <p class="review-text">I highly recommend this item. I'm a Pokemon card and hockey card collector, and this was the perfect item for both. It fits the card and toploader perfectly without bending, and I plan on purchasing another in a different color when I get my next grail. 10/10 product, 10/10 seller.</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
 
-                <div class="review-card">
+                <article class="review-card" aria-label="Review by Katie, 5 out of 5 stars">
                     <div class="review-header">
-                        <div class="review-stars">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Katie</span>
-                            <span class="review-date">Dec 6, 2025</span>
+                            <time class="review-date" datetime="2025-12-06">Dec 6, 2025</time>
                         </div>
                     </div>
                     <p class="review-text">I loved my first purchase so much that I had to get another one - in a different color. Just like last time, the item is as described and was shipped to me fast.</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
 
-                
-
-                <div class="review-card">
+                <article class="review-card" aria-label="Review by Tyler, 5 out of 5 stars">
                     <div class="review-header">
-                        <div class="review-stars">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                        <div class="review-stars" role="img" aria-label="5 out of 5 stars">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <path d="M12 2L15 8.5L22 9.27L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9.27L9 8.5L12 2Z"/>
                             </svg>
                         </div>
                         <div class="review-meta">
                             <span class="review-author">Tyler</span>
-                            <span class="review-date">Oct 11, 2025</span>
+                            <time class="review-date" datetime="2025-10-11">Oct 11, 2025</time>
                         </div>
                     </div>
                     <p class="review-text">Ordered product and had in under a week. Got an extra one as well on top of what i ordered. They look great around the cards and lock them nicely in place. I would definitely order more in the future to put around more of my favorite cards.</p>
                     <p class="review-product">Modular MagCase for Toploader Cards</p>
-                </div>
+                </article>
             </div>
-
-            
-            
 
             <div class="reviews-cta">
                 <a href="https://www.etsy.com/shop/DesignedByBud?ref=dashboard-header#reviews" target="_blank" rel="noopener noreferrer" class="reviews-button">
                     Read All 7 Reviews on Etsy
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <span class="sr-only">(opens in new tab)</span>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path d="M4.16699 10H15.8337" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M10 4.16699L15.8333 10.0003L10 15.8337" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -681,32 +711,40 @@
         </div>
     </section>
 
-    <section class="newsletter-section">
+    <section class="newsletter-section" aria-labelledby="newsletter-title">
         <div class="newsletter-container">
-            <h2>Stay Updated!</h2>
+            <h2 id="newsletter-title">Stay Updated!</h2>
             <p>Add your email below for custom order consultations, exclusive deals, and new product launches!</p>
             <form
                 class="newsletter-form"
                 action="https://formspree.io/f/mlgepwrb"
                 method="POST"
+                aria-label="Newsletter signup"
             >
+                <label for="newsletter-email" class="sr-only">Email address</label>
                 <input
                     type="email"
+                    id="newsletter-email"
                     name="email"
                     placeholder="Enter your email address"
                     required
-                    aria-label="Email address"
+                    aria-required="true"
+                    aria-describedby="newsletter-status"
+                    autocomplete="email"
                 >
                 <button type="submit">Subscribe</button>
             </form>
+            <div id="newsletter-status" class="newsletter-status" role="status" aria-live="polite"></div>
         </div>
     </section>
 
-    <footer class="footer">
+    </main>
+
+    <footer class="footer" role="contentinfo">
         <div class="footer-content">
             <div class="footer-brand">
                 <div class="footer-brand-header">
-                    <img src="graphics/DBB_LOGO.webp" alt="DesignedByBud Logo" class="footer-logo-image">
+                    <img src="graphics/DBB_LOGO.webp" alt="" role="presentation" class="footer-logo-image">
                     <h3 class="footer-logo">DesignedByBud</h3>
                 </div>
                 <p class="footer-tagline">Bringing ideas to life through innovative design</p>
@@ -715,22 +753,22 @@
                 <div class="footer-section">
                     <h4>Shop</h4>
                     <ul>
-                        <li><a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer">Etsy Store</a></li>
+                        <li><a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer">Etsy Store<span class="sr-only"> (opens in new tab)</span></a></li>
                         <li><a href="#products">All Products</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h4>Connect</h4>
                     <ul>
-                        <li><a href="https://www.tiktok.com/@designedbybud" target="_blank" rel="noopener noreferrer">Tiktok</a></li>
-                        <li><a href="https://www.instagram.com/designedbybud/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                        <li><a href="https://www.tiktok.com/@designedbybud" target="_blank" rel="noopener noreferrer">Tiktok<span class="sr-only"> (opens in new tab)</span></a></li>
+                        <li><a href="https://www.instagram.com/designedbybud/" target="_blank" rel="noopener noreferrer">Instagram<span class="sr-only"> (opens in new tab)</span></a></li>
                     </ul>
                 </div>
             </nav>
         </div>
         <div class="footer-bottom">
             <p>&copy; 2024 DesignedByBud. All rights reserved.</p>
-            <p class="footer-note">Products available exclusively on <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer">Etsy</a></p>
+            <p class="footer-note">Products available exclusively on <a href="https://designedbybud.etsy.com" target="_blank" rel="noopener noreferrer">Etsy<span class="sr-only"> (opens in new tab)</span></a></p>
         </div>
     </footer>
 
@@ -743,21 +781,18 @@
     <script src="app.js?v=1.0.2"></script>
 
     <script>
-        // Register Service Worker for caching and offline support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js')
                     .then((registration) => {
                         console.log('Service Worker registered successfully:', registration.scope);
 
-                        // Check for updates periodically
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             console.log('Service Worker update found');
 
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // New service worker available, could notify user
                                     console.log('New content available, refresh to update');
                                 }
                             });
@@ -768,6 +803,22 @@
                     });
             });
         }
+
+        (function() {
+            var toggle = document.querySelector('.why-magcase-toggle');
+            var panel = document.getElementById('why-magcase-content');
+            if (toggle && panel) {
+                toggle.addEventListener('click', function() {
+                    var expanded = toggle.getAttribute('aria-expanded') === 'true';
+                    toggle.setAttribute('aria-expanded', String(!expanded));
+                    if (!expanded) {
+                        panel.removeAttribute('hidden');
+                    } else {
+                        panel.setAttribute('hidden', '');
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>
