@@ -511,6 +511,7 @@ class OBJViewer {
     let touchStartTime = 0;
     let twoFingerPanning = false;
     let twoFingerStartMidpoint = { x: 0, y: 0 };
+    let twoFingerStartPositions = []; // Track individual finger positions
     let cameraTargetStartX = 0;
 
     const onTouchStart = (e) => {
@@ -546,9 +547,14 @@ class OBJViewer {
         this.controls.previousMousePosition = touchStartPos;
         this.controls.isDragging = true;
       } else if (e.touches.length === 2) {
-        // Two-finger pan mode
+        // Two fingers detected - but don't activate panning yet
         e.preventDefault();
-        twoFingerPanning = true;
+
+        // Store individual finger positions
+        twoFingerStartPositions = [
+          { x: e.touches[0].clientX, y: e.touches[0].clientY },
+          { x: e.touches[1].clientX, y: e.touches[1].clientY }
+        ];
 
         // Calculate midpoint between two fingers
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
@@ -558,13 +564,40 @@ class OBJViewer {
         // Store starting camera target X position
         cameraTargetStartX = this.orbitalControls.target.x;
 
-        // Stop single-finger actions
-        this.controls.isDragging = false;
-        this.isDraggingObject = false;
+        // Don't immediately stop single-finger actions - wait for movement
+        // twoFingerPanning will be set to true in touchmove if appropriate
       }
     };
 
     const onTouchMove = (e) => {
+      // Check if we should activate two-finger panning
+      if (!twoFingerPanning && e.touches.length === 2 && twoFingerStartPositions.length === 2) {
+        // Calculate movement of each finger
+        const finger1DeltaX = e.touches[0].clientX - twoFingerStartPositions[0].x;
+        const finger1DeltaY = e.touches[0].clientY - twoFingerStartPositions[0].y;
+        const finger2DeltaX = e.touches[1].clientX - twoFingerStartPositions[1].x;
+        const finger2DeltaY = e.touches[1].clientY - twoFingerStartPositions[1].y;
+
+        // Check if both fingers moved horizontally (more X than Y movement)
+        const finger1IsHorizontal = Math.abs(finger1DeltaX) > Math.abs(finger1DeltaY);
+        const finger2IsHorizontal = Math.abs(finger2DeltaX) > Math.abs(finger2DeltaY);
+
+        // Check if both fingers moved in the same horizontal direction
+        const sameDirection = (finger1DeltaX * finger2DeltaX) > 0;
+
+        // Movement threshold (at least 10 pixels)
+        const finger1Moved = Math.abs(finger1DeltaX) > 10 || Math.abs(finger1DeltaY) > 10;
+        const finger2Moved = Math.abs(finger2DeltaX) > 10 || Math.abs(finger2DeltaY) > 10;
+
+        // Activate panning if both fingers moved horizontally in same direction
+        if (finger1IsHorizontal && finger2IsHorizontal && sameDirection && finger1Moved && finger2Moved) {
+          twoFingerPanning = true;
+          // Stop single-finger actions
+          this.controls.isDragging = false;
+          this.isDraggingObject = false;
+        }
+      }
+
       // Handle two-finger panning
       if (twoFingerPanning && e.touches.length === 2) {
         e.preventDefault();
@@ -579,8 +612,8 @@ class OBJViewer {
         const panSensitivity = -0.01;
         const newTargetX = cameraTargetStartX + deltaX * panSensitivity;
 
-        // Clamp camera target to reasonable bounds (±8 units to cover 20-unit shelf)
-        this.orbitalControls.target.x = Math.max(-8, Math.min(8, newTargetX));
+        // Clamp camera target to half shelf width (±5 units for 10-unit effective width)
+        this.orbitalControls.target.x = Math.max(-5, Math.min(5, newTargetX));
 
         // Update camera position based on new target
         this.updateCameraPosition();
@@ -761,10 +794,92 @@ class OBJViewer {
     canvas.addEventListener('touchend', onTouchEnd);
     canvas.addEventListener('touchcancel', onTouchEnd);
 
+    // Keyboard support for arrow keys (desktop camera panning)
+    const onKeyDown = (e) => {
+      // Only handle arrow keys when shelf is visible
+      if (!this.config.shelfVisible) return;
+
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault(); // Prevent page scroll
+
+        // Pan camera left or right
+        const panAmount = 0.15; // Units to move per key press
+        const direction = e.key === 'ArrowLeft' ? -1 : 1;
+
+        let newTargetX = this.orbitalControls.target.x + (panAmount * direction);
+
+        // Clamp camera target to half shelf width (±5 units)
+        newTargetX = Math.max(-5, Math.min(5, newTargetX));
+
+        this.orbitalControls.target.x = newTargetX;
+        this.updateCameraPosition();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+
+    // Keyboard navigation support - arrow keys for rotation when focused
+    let viewerKeyHandler = null;
+
+    const onFocus = (e) => {
+      // Create and attach arrow key handler when viewer gains focus
+      viewerKeyHandler = (e) => {
+        // Handle arrow keys for 3D rotation
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' ||
+            e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault(); // Prevent page scroll
+
+          const rotationAmount = 0.05; // Rotation increment in radians
+
+          if (e.key === 'ArrowLeft') {
+            // Rotate camera left (decrease theta)
+            this.orbitalControls.theta -= rotationAmount;
+          } else if (e.key === 'ArrowRight') {
+            // Rotate camera right (increase theta)
+            this.orbitalControls.theta += rotationAmount;
+          } else if (e.key === 'ArrowUp') {
+            // Rotate camera up (decrease phi)
+            this.orbitalControls.phi -= rotationAmount;
+          } else if (e.key === 'ArrowDown') {
+            // Rotate camera down (increase phi)
+            this.orbitalControls.phi += rotationAmount;
+          }
+
+          // Clamp phi (vertical rotation)
+          this.orbitalControls.phi = Math.max(
+            this.orbitalControls.minPhi,
+            Math.min(this.orbitalControls.maxPhi, this.orbitalControls.phi)
+          );
+
+          // Clamp theta (horizontal rotation)
+          this.orbitalControls.theta = Math.max(
+            this.orbitalControls.minTheta,
+            Math.min(this.orbitalControls.maxTheta, this.orbitalControls.theta)
+          );
+
+          this.updateCameraPosition();
+        }
+      };
+
+      document.addEventListener('keydown', viewerKeyHandler);
+    };
+
+    const onBlur = (e) => {
+      // Remove arrow key handler when viewer loses focus
+      if (viewerKeyHandler) {
+        document.removeEventListener('keydown', viewerKeyHandler);
+        viewerKeyHandler = null;
+      }
+    };
+
+    this.container.addEventListener('focus', onFocus);
+    this.container.addEventListener('blur', onBlur);
+
     // Store references for cleanup
     this.eventHandlers = {
       onMouseDown, onMouseMove, onMouseUp,
-      onTouchStart, onTouchMove, onTouchEnd
+      onTouchStart, onTouchMove, onTouchEnd,
+      onKeyDown, onFocus, onBlur
     };
 
     canvas.style.cursor = 'grab';
@@ -2032,6 +2147,21 @@ class OBJViewer {
       canvas.removeEventListener('touchmove', this.eventHandlers.onTouchMove);
       canvas.removeEventListener('touchend', this.eventHandlers.onTouchEnd);
       canvas.removeEventListener('touchcancel', this.eventHandlers.onTouchEnd);
+    }
+
+    // Remove keyboard event listener
+    if (this.eventHandlers && this.eventHandlers.onKeyDown) {
+      document.removeEventListener('keydown', this.eventHandlers.onKeyDown);
+    }
+
+    // Remove focus/blur event listeners
+    if (this.eventHandlers && this.container) {
+      if (this.eventHandlers.onFocus) {
+        this.container.removeEventListener('focus', this.eventHandlers.onFocus);
+      }
+      if (this.eventHandlers.onBlur) {
+        this.container.removeEventListener('blur', this.eventHandlers.onBlur);
+      }
     }
     
     // Clean up Three.js objects

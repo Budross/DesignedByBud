@@ -103,6 +103,13 @@
     font-weight: bold;
 }
 
+/* Focus outline for keyboard navigation */
+.product-card .viewer-3d:focus {
+    outline: 3px solid #2563eb;
+    outline-offset: -3px;
+    box-shadow: inset 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
 /* Ensure canvas fills the flex container properly */
 .product-card .viewer-3d canvas {
     width: 100% !important;
