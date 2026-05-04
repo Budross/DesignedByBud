@@ -2,6 +2,8 @@
 
 A modern, interactive website showcasing the MagCase product line - magnetic card cases and organizers for trading card collectors.
 
+View the website at DesignedByBud.com
+
 ## About MagCase
 
 MagCase by DesignedByBud offers premium magnetic card cases designed for collectors who want secure, stylish storage for their valuable trading cards. The product line features:
